@@ -25,7 +25,11 @@ const state = {
   // When a turn last ended, so the click it produces can be ignored.
   turnedAt: 0,
   // true while 'position' is the example ball rather than a real GPS fix.
-  demoFix: false
+  demoFix: false,
+  // true while 'position' is a made-up "Locate me" result on the example
+  // course. Unlike the example ball it stays where it was put, so it behaves
+  // like a fix in every way except being one.
+  simFix: false
 };
 
 /* -- Helpers ------------------------------------------------------------- */
@@ -776,6 +780,7 @@ function drawMap() {
       : 'Up the screen is the line to the green.');
   }
   if (state.demoFix) note.push('The marker is an example ball, not you.');
+  else if (state.simFix) note.push('Simulated position, not yours.');
   else if (!state.position) note.push('Tap “Locate me” to put yourself on the map.');
   else if (out.meOffMap) note.push('Your fix is well away from the mapped holes, so it is not drawn.');
   else if (!whole) note.push('The ring around you is how good the fix is.');
@@ -995,8 +1000,90 @@ function drawHoleHint() {
   el.classList.toggle('hidden', !msg);
 }
 
+/** A believable spot somewhere on the course: a random hole, a random point
+    along it, and up to 25 yards either side of the line of play.
+
+    This exists because of how the demo reads. The example course is Pebble
+    Beach and almost nobody opening the published site is standing on it, so a
+    real fix correctly answers "that is not on this course" and leaves three
+    dashes — which looks broken rather than careful. Inventing a position on
+    an invented course costs nothing: the banner, the watermark on the map and
+    the line under the yardages all say what it is. */
+function randomCoursePosition() {
+  const holes = (state.course && state.course.holes) || [];
+  if (!holes.length) return null;
+
+  const pick = Math.floor(Math.random() * holes.length);
+  const h = holes[pick];
+  const route = (h.path && h.path.length > 1)
+    ? h.path.concat([h.center])
+    : (h.tee && h.center ? [h.tee, h.center] : null);
+  if (!route) return null;
+
+  const legs = [];
+  let total = 0;
+  for (let i = 1; i < route.length; i++) {
+    const d = distanceYards(route[i - 1], route[i]);
+    legs.push(d);
+    total += d;
+  }
+  if (!total) return null;
+
+  // Along the hole, short of the green. Level with it or past it, 'front' and
+  // 'back' inverted — they are fixed points measured from the tee, so a ball
+  // beside the green is genuinely nearer the back of it, which reads as a bug.
+  let want = total * (0.15 + Math.random() * 0.7);
+  let i = 0;
+  while (i < legs.length - 1 && want > legs[i]) { want -= legs[i]; i++; }
+
+  const a = route[i], b = route[i + 1];
+  const t = legs[i] ? want / legs[i] : 0;
+  const lat = a.lat + t * (b.lat - a.lat);
+  const lon = a.lon + t * (b.lon - a.lon);
+
+  // Off the line by up to a wayward drive, either side — nobody is ever on it.
+  const k = Math.cos((lat * Math.PI) / 180);
+  const dy = b.lat - a.lat;
+  const dx = (b.lon - a.lon) * k;
+  const len = Math.hypot(dx, dy) || 1;
+  const off = ((Math.random() * 2) - 1) * 25 / M_TO_YD / 111320;
+
+  return {
+    holeIndex: pick,
+    pos: {
+      lat: lat - (dx / len) * off,
+      lon: lon + (dy / len) * off / k,
+      // A plausible phone fix, so the accuracy ring shows the real thing.
+      accuracy: 4 + Math.random() * 5
+    }
+  };
+}
+
 function locate() {
   const out = $('accuracy');
+
+  // Only ever on an example course. The moment data/course.json says
+  // "mapped": true this button is real GPS again, with real errors, because
+  // by then the number on this screen is one a player clubs off.
+  if (state.course && state.course.mapped !== true) {
+    const made = randomCoursePosition();
+    if (made) {
+      state.position = made.pos;
+      state.demoFix = false;
+      state.simFix = true;
+      // Show the hole the ball was actually put on. autoSelectHole only
+      // switches within 600 yards, and a ball in the middle of a long par 5
+      // is further than that from both its own tee and its own green — so
+      // the view would stay on whatever hole was up, reporting 662 yards to
+      // a green the player is nowhere near.
+      state.holeIndex = made.holeIndex;
+      drawHole();
+      out.className = 'accuracy';
+      out.textContent = 'Simulated position on the example course — not where '
+        + 'you are. Tap again for another.';
+      return;
+    }
+  }
 
   if (!navigator.geolocation) {
     out.textContent = 'This browser has no location support.';
@@ -1017,6 +1104,7 @@ function locate() {
         accuracy: pos.coords.accuracy
       };
       state.demoFix = false;
+      state.simFix = false;
       autoSelectHole(state.position);
       drawHole();
 

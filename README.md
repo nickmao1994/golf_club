@@ -930,3 +930,45 @@ whoever worked it out — the mode, or the last drag.
 Redrawing the whole map each frame costs 0.09 ms on a single hole and 0.57 ms
 across all eighteen, against a 16.7 ms frame budget, so there is no throttling
 and none is needed.
+
+## "Locate me" on the example course
+
+Tapping it drops a believable ball somewhere on the course — a random hole, a
+random point along it, up to 25 yards either side of the line of play, and a
+4–9 metre accuracy so the ring shows what a real fix looks like. Tap again for
+another.
+
+This exists because of how the published demo read. The example course is
+Pebble Beach and nobody opening the site is standing on it, so a real fix
+correctly answered *"that is not on this course"* and left three dashes. That
+is the honest answer and it looked like a broken app.
+
+**It is scoped hard to `"mapped": false`.** The moment `data/course.json` says
+the course is really mapped, the button is real GPS again with real errors —
+verified: on a mapped course the simulation never runs, a permission denial
+still reports a denial, and a fix off the course still dashes out. Nothing is
+invented about a course someone is actually playing, because by then the
+number on screen is one a player clubs off.
+
+Geolocation is not even consulted in the example case, so demoing the feature
+costs no permission prompt.
+
+Two things that had to be got right, both found by running it 25 times rather
+than once:
+
+- **The hole shown has to be the hole the ball is on.** The first version
+  placed the ball and let `autoSelectHole()` choose the view, but that only
+  switches within 600 yards — and a ball mid-fairway on a long par 5 is
+  further than that from both its own tee and its own green. The view stayed
+  on whatever hole was up and reported *662 yards* to a green the player was
+  nowhere near. It now selects the hole it chose.
+- **The ball stops short of the green.** Level with it or past it, `front` and
+  `back` invert — they are fixed points measured from the tee, so a ball
+  beside the green really is nearer its back edge, which reads as a bug.
+
+Checked over 25 taps: eleven different holes, front ≤ centre ≤ back every
+time, never a distance longer than the hole itself.
+
+A simulated fix stays where it is put, unlike the example ball that follows
+you from hole to hole — `simFix` rather than `demoFix`. It behaves like a fix
+in every way except being one, and says so on the map and under the yardages.
