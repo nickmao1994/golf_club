@@ -1009,3 +1009,119 @@ reloads — or one hard reload. Every update after it is a single load.
 
 Bumping `CACHE` in `sw.js` is still what triggers any of this. Without the
 bump the new worker is byte-identical, nothing installs, and nothing changes.
+
+## The look, after Leeds Golf Centre
+
+Taken from leedsgolfcentre.com, measured off the live site rather than eyeballed:
+
+| | theirs | here |
+|---|---|---|
+| primary | `#152F4F` navy | `--brand` |
+| body text | `#4F627A` slate | `--text-dim` |
+| accent | `#52BABB` teal | `--accent`, decorative only |
+| corners | `0` | `0` everywhere but the round map legend dots |
+| card | `0 7px 35px rgba(0,0,0,.1)`, no border | same shadow, border kept |
+| headings | uppercase, 0.2–0.3em tracking | uppercase, 0.16–0.18em |
+| buttons | uppercase, 11px/700, 0.2em | uppercase, 13px/700, 0.12em |
+| body | 16/30 | 17/1.6 |
+
+### Green is not the brand any more
+
+The biggest change is structural, not visual. `--green` used to do two jobs:
+the interface *and* the grass. Navy can do the first; it cannot do the second,
+because a navy fairway stops reading as a golf map.
+
+So `--brand` now carries the header, buttons, chips, tabs and the big yardage,
+and `--green` is grass — used only by the course map and by "Open" on the
+status card, where green still means what green means. Anything added later
+that is about the course should take `--green`; anything about the app should
+take `--brand`.
+
+### What was deliberately not copied
+
+- **Their typeface.** The site uses Larsseit, which is licensed, and this app
+  loads no web font at all — a font request is one more thing to fail on the
+  back nine. The uppercase-and-tracked treatment is what carries the look;
+  the system stack renders it fine.
+- **The diagonal chevron motif and the photography.** Those are their
+  identity, not a design language. Borrowing them would make this look like
+  their site rather than like a club app with a similar palette.
+- **Shadow instead of a border.** Their cards float on a shadow alone. Kept
+  the hairline border as well, because a soft shadow disappears on a phone
+  held in sunlight, which is where this one is read. In dark mode the shadow
+  is switched off entirely — it does nothing there but cost paint.
+
+### What had to be adapted
+
+- **Tab tracking.** Six labels across a 375px phone leave about 60px each. At
+  the reference's tracking, "Schedule" and "Results" came within 2px of
+  touching. Measured down until the gap stopped growing: 10px, 0.06em.
+- **Teal is decorative only.** `#52BABB` is 2.31:1 under white — it fails even
+  the 3:1 for a UI component. It is the active-tab rule, where the label's
+  colour already carries the state, and nothing else.
+- **Amber pulled back.** The caution banners stayed amber, because amber means
+  caution, but the yellow is cooler so it sits with navy rather than against
+  it. 8.4:1 light, 10.2:1 dark.
+
+### Contrast after the change
+
+Navy is darker than the green it replaced, so this got better, not worse:
+
+| | before | light | dark |
+|---|---|---|---|
+| header, buttons, chips, pills, yardage | 6.51 / 6.92 | **13.54** | **6.20** |
+| secondary text | 5.93 / 6.56 | **6.25** | **6.39** |
+| loss pills | 5.44 / 5.28 | **5.44** | **5.28** |
+
+Everything still passes AA in both themes, and all six tabs, all 18 holes,
+Locate me, hole-picking and the scorecard were re-checked after the restyle.
+
+## The palette
+
+`05668D • 028090 • 00A896 • 02C39A • F0F3BD`. The structure from the previous
+section is unchanged — square corners, uppercase tracked headings, the
+brand/grass split. Only the colours moved.
+
+Roles were assigned by measuring, not by taste. Carrying white text, the five
+measure against white:
+
+| | | white text on it |
+|---|---|---|
+| `#05668D` | deep petrol | **6.38** |
+| `#028090` | teal | **4.67** |
+| `#00A896` | sea green | 2.98 |
+| `#02C39A` | mint | 2.26 |
+| `#F0F3BD` | cream | 1.15 |
+
+That decides almost everything:
+
+- **Only the deepest can be the interface colour**, so `#05668D` is `--brand`:
+  header, buttons, chips, tabs, the big yardage.
+- **`#028090` is the only other one safe for text**, so it accents — the
+  active-tab rule, match pills, and the word "Open".
+- **The two greens are for the map**, where the fairway sits under a band at
+  0.15 opacity and nothing has to be read off it.
+- **The cream can only ever be a background.** Which is exactly what a caution
+  banner wants: it is the one warm colour here, so it became the banner rather
+  than the page. The page is a pale tint instead, so the banners still stand
+  off it.
+
+### One real failure, caught by measuring
+
+"Open" on the status card was taking `--green` (`#00A896`) and came out at
+**2.98:1**. At 28px bold it counts as large text and needs 3:1 — so it failed
+even the relaxed threshold. It takes `--green-dark` (`#028090`) now: 4.67:1,
+which clears the strict one.
+
+`--green` stays what it is: the map's grass, where it is never text.
+
+### Dark mode
+
+The palette is a light-mode one, so the dark surfaces are derived from its
+deepest colour. The order flips — on a dark screen the interface colour has to
+be a *light* fill, so the mint leads and the deep petrol becomes the
+background it sits on.
+
+Lowest text-on-fill anywhere after the change: **5.44** light, **5.28** dark,
+with the single large-text exception at 4.14 (needs 3). Every tab, all 18
+holes, Locate me, hole-picking and the scorecard re-checked in both themes.

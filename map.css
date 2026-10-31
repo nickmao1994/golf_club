@@ -23,7 +23,7 @@
 
 svg.map {
   width: 100%; height: auto; display: block;
-  border-radius: 10px; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 0; background: var(--bg); border: 1px solid var(--line);
   /* The page must still scroll past a map that fills most of the screen, so
      the map claims nothing until a hold says it is being turned. */
   touch-action: pan-y;
@@ -33,7 +33,7 @@ svg.map {
    no acknowledgement reads as a dead control. */
 svg.map.turning {
   touch-action: none;
-  border-color: var(--green);
+  border-color: var(--brand);
   cursor: grabbing;
 }
 
