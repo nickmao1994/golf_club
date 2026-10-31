@@ -1297,6 +1297,26 @@ function initTabs() {
   }
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    // Whether this page is already being served by a worker. A page with no
+    // controller is a first visit: control arriving then is not an update.
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloading = false;
+
+    /* The shell is served cache-first, so a reload that finds a new worker
+       still runs the files it already loaded. The new worker installs,
+       skipWaiting()s and claims the page — but app.js has executed by then,
+       and nothing short of another load replaces it. That is two reloads to
+       see a change, and nobody reloads a golf app twice: they conclude it is
+       broken, which is exactly what happened.
+
+       So when control changes hands, load once more. Guarded against a first
+       visit, where it would be a pointless extra fetch, and against itself. */
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloading) return;
+      reloading = true;
+      location.reload();
+    });
+
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 })();

@@ -972,3 +972,40 @@ time, never a distance longer than the hole itself.
 A simulated fix stays where it is put, unlike the example ball that follows
 you from hole to hole — `simFix` rather than `demoFix`. It behaves like a fix
 in every way except being one, and says so on the map and under the yardages.
+
+## Why an update used to take two reloads
+
+Reported as "when I click Locate me the red point disappears" — which was
+true, and was the *old* code doing exactly what it should: a real GPS fix
+somewhere that is not Pebble Beach is off the mapped course, so the map
+refuses to draw the marker and says so. The simulated position shipped in the
+previous version fixed that. The real problem was that the fix had not reached
+the browser.
+
+The shell is served cache-first. On a reload the page gets the files the old
+worker already has; *meanwhile* the new worker installs, calls
+`skipWaiting()`, activates and claims the page. But `app.js` has executed by
+then. Nothing short of another load replaces it — so every update took two
+reloads, and nobody reloads a golf app twice. They conclude it is broken.
+
+`app.js` now listens for `controllerchange` and reloads once when control
+changes hands. Two guards: `hadController` so a first visit — where control
+arriving is not an update — does not reload for nothing, and a `reloading`
+flag against looping.
+
+Verified by actually shipping a version. Installed one, published another with
+a marker, then loaded the page **once**:
+
+```
+before   caches [golfclub-v31]   no marker
+after    caches [golfclub-v32]   marker present, navType "reload"
+```
+
+And a first visit still loads exactly once.
+
+**This only helps from the next update onward.** A browser still holding an
+older version does not have the listener, so that one upgrade still needs two
+reloads — or one hard reload. Every update after it is a single load.
+
+Bumping `CACHE` in `sw.js` is still what triggers any of this. Without the
+bump the new worker is byte-identical, nothing installs, and nothing changes.
