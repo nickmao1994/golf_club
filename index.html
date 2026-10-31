@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>School Golf Club</title>
+<meta name="theme-color" content="#1d6b3f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="map.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1 id="clubName">Golf Club</h1>
+  <p id="tagline"></p>
+</header>
+
+<main>
+  <!-- Sits above every tab while club.json has "demo": true. -->
+  <div class="banner hidden" id="demoBanner">
+    <strong>Demo data.</strong> The schedule, results, course status and
+    yardages here are invented, to show how the app works. Nothing on this
+    screen is real club information.
+  </div>
+
+  <!-- ───────── Today ───────── -->
+  <section class="view" id="view-today">
+    <div class="card" id="statusCard">
+      <div class="card-head">
+        <h2>Course status</h2>
+        <span class="stamp" id="statusStamp"></span>
+      </div>
+      <div class="status-grid">
+        <div class="status-big" id="statusOpen">—</div>
+        <dl class="kv">
+          <dt>Greens</dt><dd id="greenHeight">—</dd>
+          <dt>Rough</dt><dd id="roughHeight">—</dd>
+          <dt>Carts</dt><dd id="cartsAllowed">—</dd>
+        </dl>
+      </div>
+      <p class="note" id="statusNotes"></p>
+    </div>
+
+    <div class="card" id="weatherCard">
+      <div class="card-head">
+        <h2>Weather</h2>
+        <span class="stamp" id="weatherStamp"></span>
+      </div>
+      <div id="weatherBody" class="loading">Loading forecast…</div>
+
+      <!-- Thunder can be audible long before a forecast says "storm", so this
+           is always available rather than only when the API reports one. -->
+      <button class="btn-small btn-thunder" id="btnThunder">Heard thunder?</button>
+
+      <div class="alert hidden" id="stormAlert">
+        <strong>Thunderstorm risk.</strong>
+        <p class="alert-p">
+          Stop play. Get inside a building or a hard-topped vehicle. Put the
+          clubs down — they are metal.
+        </p>
+        <p class="alert-p">
+          <strong>Not safe:</strong> golf carts, course shelters, trees, open
+          ground, water, metal fences.
+        </p>
+
+        <div class="thunder">
+          <div class="thunder-clock" id="thunderClock">
+            Wait 30 minutes from the last thunder.
+          </div>
+          <button class="btn-small" id="btnThunderAgain">Heard it again — restart</button>
+        </div>
+
+        <p class="alert-p alert-fine">
+          Any new thunder or lightning restarts the 30 minutes. Standard school
+          policy is to suspend play when lightning is within 10 miles and to
+          wait a full 30 minutes after the last one.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Next up</h2></div>
+      <div id="nextEvent" class="loading">Loading…</div>
+    </div>
+  </section>
+
+  <!-- ───────── Yardage ───────── -->
+  <section class="view hidden" id="view-yardage">
+    <!-- Shown instead of the live feature while features.yardage is "preview":
+         says what is coming, shows no numbers. -->
+    <div class="card hidden" id="yardagePreviewCard">
+      <div class="card-head">
+        <h2>Distance to green</h2>
+        <span class="stamp">Not ready yet</span>
+      </div>
+      <p class="preview-lead">
+        How far you are from the front, center and back of the green on every
+        hole, with a map showing where you are standing.
+      </p>
+      <ul class="preview-list">
+        <li>Works with no signal — GPS comes from satellites, not the network.</li>
+        <li>Your location stays on your phone. Nothing is sent anywhere.</li>
+        <li>Distance only, so it stays legal for tournament play.</li>
+      </ul>
+      <p class="note">
+        This switches on once the home course has been measured, hole by hole.
+        Until then it shows no yardages at all — a number that is wrong is
+        worse than no number, because you would club off it.
+      </p>
+    </div>
+
+    <div class="banner hidden" id="unmappedBanner">
+      <strong>Course not mapped yet.</strong> The layout below is
+      <b id="exampleCourseName">an example course</b> — a real one, standing in
+      so the map and the distances can be seen working on real holes. The marker
+      is an example ball, not where you are. Walk your own course with
+      <a href="tools/map-course.html">the mapping tool</a>, then paste the result
+      into <code>data/course.json</code>.
+      <span class="credit" id="courseCredit"></span>
+    </div>
+
+    <div class="card gps-card">
+      <div class="card-head">
+        <h2>Distance to green</h2>
+        <button class="btn-small" id="btnLocate">Locate me</button>
+      </div>
+
+      <div class="hole-pick">
+        <button class="btn-small" id="holePrev" aria-label="Previous hole">‹</button>
+        <div class="hole-label">
+          <span id="holeNum">—</span>
+          <small id="holeMeta"></small>
+        </div>
+        <button class="btn-small" id="holeNext" aria-label="Next hole">›</button>
+      </div>
+
+      <div class="yardages">
+        <div class="yd"><span class="yd-num" id="ydBack">—</span><span class="yd-tag">Back</span></div>
+        <div class="yd yd-main"><span class="yd-num" id="ydCenter">—</span><span class="yd-tag">Center</span></div>
+        <div class="yd"><span class="yd-num" id="ydFront">—</span><span class="yd-tag">Front</span></div>
+      </div>
+
+      <p class="accuracy" id="accuracy">Tap “Locate me” to start.</p>
+
+      <!-- Why the big number is large: you are on the course, but not on the
+           hole being shown. -->
+      <p class="accuracy hole-hint hidden" id="holeHint"></p>
+
+      <!-- Local knowledge for this hole, from data/course.json. -->
+      <p class="hole-note hidden" id="holeNote"></p>
+      <p class="note rules-note">
+        Distance only — no slope or club advice, so this stays conforming under
+        Rule 4.3a for tournament play.
+      </p>
+    </div>
+
+    <div class="card" id="mapCard">
+      <div class="card-head">
+        <h2>Where you are</h2>
+        <button class="btn-small" id="btnMapView" aria-pressed="false">Whole course</button>
+      </div>
+
+      <svg class="map" id="holeMap" viewBox="0 0 320 400" role="img"
+           aria-label="Course map"></svg>
+
+      <div class="legend">
+        <span><i class="swatch tee"></i>Tee</span>
+        <span><i class="swatch pin"></i>Green</span>
+        <span><i class="swatch sand"></i>Sand</span>
+        <span><i class="swatch me"></i>You</span>
+      </div>
+
+      <p class="note" id="mapNote"></p>
+    </div>
+  </section>
+
+  <!-- ───────── Card ───────── -->
+  <section class="view hidden" id="view-card">
+    <div id="cardBody"></div>
+  </section>
+
+  <!-- ───────── Schedule ───────── -->
+  <section class="view hidden" id="view-schedule">
+    <div id="scheduleList" class="loading">Loading…</div>
+  </section>
+
+  <!-- ───────── Results ───────── -->
+  <section class="view hidden" id="view-results">
+    <!-- Shown instead of the live list while features.results is "preview". -->
+    <div class="card hidden" id="resultsPreviewCard">
+      <div class="card-head">
+        <h2>Match results</h2>
+        <span class="stamp">Not ready yet</span>
+      </div>
+      <p class="preview-lead">
+        How the team did in every match this season, posted after each one is
+        played.
+      </p>
+      <ul class="preview-list">
+        <li>Put up by the coach after the match — not live scoring during play.</li>
+        <li>A season list, with the detail of each match behind it.</li>
+      </ul>
+      <p class="note">
+        This switches on once the scoring format is settled and the first match
+        has been played.
+      </p>
+    </div>
+
+    <div id="resultsList" class="loading">Loading…</div>
+  </section>
+
+  <!-- ───────── About ───────── -->
+  <section class="view hidden" id="view-about">
+    <div class="card">
+      <div class="card-head"><h2>About the club</h2></div>
+      <div id="aboutText"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Contacts</h2></div>
+      <dl class="kv" id="contactList"></dl>
+    </div>
+    <div class="card" id="photoCard">
+      <div class="card-head"><h2>Photos</h2></div>
+      <div class="photos" id="photoGrid"></div>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar" role="tablist">
+  <button class="tab active" data-view="today"    role="tab">Today</button>
+  <button class="tab"        data-view="yardage"  role="tab">Yardage</button>
+  <button class="tab"        data-view="card"     role="tab">Card</button>
+  <button class="tab"        data-view="schedule" role="tab">Schedule</button>
+  <button class="tab"        data-view="results"  role="tab">Results</button>
+  <button class="tab"        data-view="about"    role="tab">About</button>
+</nav>
+
+<script src="map.js"></script>
+<script src="card.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

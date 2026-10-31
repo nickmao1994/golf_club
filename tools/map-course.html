@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Course Mapper</title>
+<style>
+  :root {
+    --green: #1d6b3f; --bg: #f4f6f3; --surface: #fff; --text: #16201a;
+    --text-dim: #5a6760; --line: #dbe2dc; --warn: #8a6f1f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --green: #4bbd7a; --bg: #11150f; --surface: #1b211c; --text: #eaf0ea;
+      --text-dim: #9aa79f; --line: #2e382f; --warn: #f0dca0;
+    }
+  }
+  * { box-sizing: border-box; }
+  .hidden { display: none !important; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    padding: 0 16px 48px;
+  }
+  header { padding: calc(16px + env(safe-area-inset-top)) 0 8px; }
+  h1 { font-size: 1.25rem; margin: 0 0 6px; }
+  p.lede { color: var(--text-dim); font-size: 0.9375rem; margin: 0 0 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 16px; margin-bottom: 14px;
+  }
+  label { display: block; font-size: 0.8125rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 6px; }
+  .row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .row > div { flex: 1; }
+  select, input {
+    width: 100%; min-height: 48px; padding: 0 12px; font-size: 1rem;
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--line); border-radius: 10px;
+  }
+  button {
+    width: 100%; min-height: 56px; font-size: 1.0625rem; font-weight: 700;
+    color: #fff; background: var(--green); border: 0; border-radius: 12px;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  button:disabled { opacity: 0.5; }
+  button.ghost { background: none; color: var(--green); border: 1px solid var(--line); min-height: 48px; }
+  .fix { font-variant-numeric: tabular-nums; font-size: 0.9375rem; color: var(--text-dim); margin: 12px 0 0; }
+  .fix.poor { color: var(--warn); font-weight: 600; }
+  .big { font-size: 2rem; font-weight: 800; text-align: center; margin: 8px 0; font-variant-numeric: tabular-nums; }
+  ul { list-style: none; padding: 0; margin: 0; font-size: 0.9375rem; }
+  li { display: flex; justify-content: space-between; gap: 10px;
+    padding: 9px 0; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  li:first-child { border-top: 0; }
+  li button { width: auto; min-height: 32px; padding: 0 10px; font-size: 0.8125rem;
+    background: none; color: var(--text-dim); border: 1px solid var(--line); }
+  .demo-note {
+    background: var(--bg); border: 1px dashed var(--line); color: var(--warn);
+    border-radius: 10px; padding: 10px 12px; font-size: 0.875rem; margin: 12px 0 0;
+  }
+  textarea {
+    width: 100%; min-height: 180px; font: 13px/1.45 ui-monospace, Menlo, Consolas, monospace;
+    background: var(--bg); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px;
+  }
+  .tip { font-size: 0.875rem; color: var(--text-dim); margin-top: 10px; }
+  a { color: var(--green); }
+</style>
+<!-- The map itself is shared with the app's Yardage tab: one renderer, one
+     stylesheet, so a fix to either lands in both places. -->
+<link rel="stylesheet" href="../map.css">
+</head>
+<body>
+
+<header>
+  <h1>Course Mapper</h1>
+  <p class="lede">
+    Walk the course with this open on your phone. Stand on the spot, hold still,
+    and record. It averages several GPS readings to cut the error, then exports
+    JSON you paste straight into <code>data/course.json</code>.
+  </p>
+</header>
+
+<div class="card">
+  <div class="row">
+    <div>
+      <label for="hole">Hole</label>
+      <select id="hole"></select>
+    </div>
+    <div>
+      <label for="point">Point</label>
+      <select id="point">
+        <option value="tee">Tee</option>
+        <option value="front">Green front</option>
+        <option value="center" selected>Green centre</option>
+        <option value="back">Green back</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <label for="par">Par (optional)</label>
+      <input id="par" type="number" inputmode="numeric" min="3" max="6" placeholder="4">
+    </div>
+    <div>
+      <label for="cardYards">Card yards (optional)</label>
+      <input id="cardYards" type="number" inputmode="numeric" placeholder="385">
+    </div>
+  </div>
+
+  <div class="big" id="countdown">Ready</div>
+  <button id="btnRecord">Record this point</button>
+  <p class="fix" id="fix">Waiting for a GPS fix…</p>
+  <p class="tip">
+    Accuracy under 5 m gives a solid point. If it hovers above 10 m, step away
+    from trees and buildings and wait a few seconds before recording.
+  </p>
+</div>
+
+<div class="card">
+  <label>Map</label>
+  <svg class="map" id="map" viewBox="0 0 400 320" role="img"
+       aria-label="Map of the points recorded so far"></svg>
+
+  <div class="legend">
+    <span><i class="swatch tee"></i>Tee</span>
+    <span><i class="swatch pin"></i>Green</span>
+    <span><i class="swatch me"></i>You</span>
+  </div>
+
+  <p class="tip">
+    The map redraws as you record, so you can see the routing take shape and
+    spot a point dropped in the wrong place before you walk off.
+  </p>
+
+  <div class="row" style="margin: 12px 0 0;">
+    <div><button class="ghost" id="btnDemo">Load demo course</button></div>
+  </div>
+
+  <p class="demo-note hidden" id="demoNote">
+    Showing a demo 9-hole course so you can see how a finished walk looks.
+    These are not real coordinates — clear them before recording your own.
+  </p>
+</div>
+
+<div class="card">
+  <label>Recorded points (<span id="count">0</span>)</label>
+  <ul id="list"></ul>
+  <p class="tip" id="emptyNote">Nothing recorded yet.</p>
+</div>
+
+<div class="card">
+  <label for="out">Export</label>
+  <textarea id="out" readonly placeholder="Record some points first."></textarea>
+  <div class="row" style="margin: 12px 0 0;">
+    <div><button class="ghost" id="btnCopy">Copy JSON</button></div>
+    <div><button class="ghost" id="btnDownload">Download</button></div>
+  </div>
+  <p class="tip">
+    Progress is saved in this browser as you go, so you can close the tab
+    between nines. <a href="#" id="btnClear">Clear everything</a>
+  </p>
+</div>
+
+<script src="../map.js"></script>
+<script>
+'use strict';
+
+/* Averages a burst of GPS samples per point. A single iPhone reading sits
+   around 3-5 m under open sky; averaging ~8 readings taken standing still
+   tightens that meaningfully, which is the whole trick behind self-mapping a
+   course instead of licensing coordinate data. */
+
+var SAMPLES = 8;
+var STORE_KEY = 'golf-course-mapper';
+
+var $ = function (id) { return document.getElementById(id); };
+var points = [];
+var lastFix = null;
+var latestKey = null; // highlights the point you just recorded
+
+/* A generated 9-hole routing, so the map can be demonstrated without walking
+   a course. Tuples keep it readable: [hole, point, lat, lon, accuracy, par,
+   cardYards] — par and yards are 0 except on the tee row. */
+var POINT_CODE = { t: 'tee', f: 'front', c: 'center', b: 'back' };
+var DEMO = [
+  [1,'t',37.773747,-122.485912,5,4,340],
+  [1,'f',37.772475,-122.482942,3,0,0],
+  [1,'c',37.772427,-122.482798,7,0,0],
+  [1,'b',37.772378,-122.482655,5,0,0],
+  [2,'t',37.772282,-122.482602,7,3,150],
+  [2,'f',37.771788,-122.481318,4,0,0],
+  [2,'c',37.771745,-122.481172,5,0,0],
+  [2,'b',37.771702,-122.481026,5,0,0],
+  [3,'t',37.771534,-122.481024,3,5,470],
+  [3,'f',37.767802,-122.48131,5,0,0],
+  [3,'c',37.767679,-122.481322,6,0,0],
+  [3,'b',37.767556,-122.481334,3,0,0],
+  [4,'t',37.767479,-122.481442,5,4,375],
+  [4,'f',37.765272,-122.483972,6,0,0],
+  [4,'c',37.765191,-122.48409,5,0,0],
+  [4,'b',37.76511,-122.484207,4,0,0],
+  [5,'t',37.765109,-122.484371,5,4,320],
+  [5,'f',37.765417,-122.487506,4,0,0],
+  [5,'c',37.765429,-122.487661,7,0,0],
+  [5,'b',37.765441,-122.487816,6,0,0],
+  [6,'t',37.765495,-122.487922,6,3,175],
+  [6,'f',37.765656,-122.489571,4,0,0],
+  [6,'c',37.765668,-122.489726,6,0,0],
+  [6,'b',37.76568,-122.489882,6,0,0],
+  [7,'t',37.765819,-122.489969,4,5,490],
+  [7,'f',37.769508,-122.491529,3,0,0],
+  [7,'c',37.769621,-122.49159,3,0,0],
+  [7,'b',37.769735,-122.491651,3,0,0],
+  [8,'t',37.769844,-122.491568,5,4,330],
+  [8,'f',37.772285,-122.490413,6,0,0],
+  [8,'c',37.772396,-122.490346,4,0,0],
+  [8,'b',37.772507,-122.490279,5,0,0],
+  [9,'t',37.772563,-122.490142,4,4,405],
+  [9,'f',37.773718,-122.486349,3,0,0],
+  [9,'c',37.773753,-122.4862,5,0,0],
+  [9,'b',37.773789,-122.486051,5,0,0]
+];
+
+function demoPoints() {
+  return DEMO.map(function (r) {
+    return {
+      hole: r[0], point: POINT_CODE[r[1]], lat: r[2], lon: r[3],
+      accuracy: r[4], par: r[5] || null, cardYards: r[6] || null, demo: true
+    };
+  });
+}
+
+var hasDemo = function () {
+  return points.some(function (p) { return p.demo; });
+};
+
+/* -- Persistence (best effort; private browsing can throw) --------------- */
+
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(points)); } catch (e) {}
+}
+
+function restore() {
+  try {
+    var raw = localStorage.getItem(STORE_KEY);
+    if (raw) points = JSON.parse(raw) || [];
+  } catch (e) { points = []; }
+}
+
+/* -- Hole picker --------------------------------------------------------- */
+
+(function fillHoles() {
+  var sel = $('hole');
+  for (var i = 1; i <= 18; i++) {
+    var o = document.createElement('option');
+    o.value = String(i);
+    o.textContent = 'Hole ' + i;
+    sel.appendChild(o);
+  }
+})();
+
+/* -- Live fix ------------------------------------------------------------ */
+
+if (navigator.geolocation) {
+  navigator.geolocation.watchPosition(function (pos) {
+    lastFix = pos.coords;
+    var acc = pos.coords.accuracy;
+    var el = $('fix');
+    el.className = 'fix' + (acc > 10 ? ' poor' : '');
+    el.textContent = 'Fix: ' + pos.coords.latitude.toFixed(6) + ', ' +
+      pos.coords.longitude.toFixed(6) + '  (±' + Math.round(acc) + ' m)';
+    renderMap();
+  }, function (err) {
+    $('fix').className = 'fix poor';
+    $('fix').textContent = err.code === err.PERMISSION_DENIED
+      ? 'Location permission denied — enable it to map the course.'
+      : 'No GPS fix yet. Step into the open.';
+  }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+} else {
+  $('fix').textContent = 'This browser has no location support.';
+}
+
+/* -- Recording ----------------------------------------------------------- */
+
+function record() {
+  if (!navigator.geolocation) return;
+
+  var btn = $('btnRecord');
+  var collected = [];
+  btn.disabled = true;
+
+  var tick = function () {
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      collected.push(pos.coords);
+      $('countdown').textContent = collected.length + ' / ' + SAMPLES;
+
+      if (collected.length < SAMPLES) {
+        setTimeout(tick, 700);
+      } else {
+        commit(collected);
+        btn.disabled = false;
+        $('countdown').textContent = 'Saved';
+      }
+    }, function () {
+      btn.disabled = false;
+      $('countdown').textContent = 'Failed';
+      $('fix').className = 'fix poor';
+      $('fix').textContent = 'Lost the fix mid-reading. Try again.';
+    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+  };
+
+  $('countdown').textContent = '0 / ' + SAMPLES;
+  tick();
+}
+
+function commit(samples) {
+  // Drop the worst readings before averaging; one bad sample skews the mean.
+  var sorted = samples.slice().sort(function (a, b) { return a.accuracy - b.accuracy; });
+  var keep = sorted.slice(0, Math.max(3, Math.ceil(sorted.length * 0.7)));
+
+  var sum = keep.reduce(function (acc, c) {
+    acc.lat += c.latitude; acc.lon += c.longitude; acc.a += c.accuracy;
+    return acc;
+  }, { lat: 0, lon: 0, a: 0 });
+
+  var hole = parseInt($('hole').value, 10);
+  var entry = {
+    hole: hole,
+    point: $('point').value,
+    lat: +(sum.lat / keep.length).toFixed(6),
+    lon: +(sum.lon / keep.length).toFixed(6),
+    accuracy: Math.round(sum.a / keep.length),
+    par: parseInt($('par').value, 10) || null,
+    cardYards: parseInt($('cardYards').value, 10) || null
+  };
+
+  // Re-recording the same point replaces it rather than duplicating.
+  points = points.filter(function (p) {
+    return !(p.hole === entry.hole && p.point === entry.point);
+  });
+  points.push(entry);
+  latestKey = entry.hole + ':' + entry.point;
+
+  save();
+  draw();
+  advance();
+}
+
+/** Step the pickers to the next thing you'll walk to, so mapping flows. */
+function advance() {
+  var order = ['tee', 'front', 'center', 'back'];
+  var i = order.indexOf($('point').value);
+
+  if (i === order.length - 1) {
+    var h = parseInt($('hole').value, 10);
+    if (h < 18) $('hole').value = String(h + 1);
+    $('point').value = 'tee';
+    $('par').value = '';
+    $('cardYards').value = '';
+  } else {
+    $('point').value = order[i + 1];
+  }
+}
+
+/* -- Map ----------------------------------------------------------------- */
+
+/* The renderer lives in ../map.js, shared with the app's Yardage tab. All this
+   has to do is hand it the recorded points in the shape it draws. */
+
+function renderMap() {
+  var latest = latestKey && points.filter(function (p) {
+    return p.hole + ':' + p.point === latestKey;
+  })[0];
+
+  GolfMap.render($('map'), {
+    holes: GolfMap.groupByHole(points),
+    me: lastFix
+      ? { lat: lastFix.latitude, lon: lastFix.longitude, accuracy: lastFix.accuracy }
+      : null,
+    highlight: latest || null,
+    labels: 'hole',
+    empty: 'Record a point, or load the demo course.',
+    // Same rule as the export: demo coordinates must never look like a survey.
+    watermark: hasDemo() ? 'Demo course — not real coordinates' : null
+  });
+}
+
+/* -- Rendering and export ----------------------------------------------- */
+
+var LABEL = { tee: 'Tee', front: 'Green front', center: 'Green centre', back: 'Green back' };
+
+function draw() {
+  var sorted = points.slice().sort(function (a, b) {
+    return a.hole - b.hole || a.point.localeCompare(b.point);
+  });
+
+  $('count').textContent = String(points.length);
+  $('emptyNote').style.display = points.length ? 'none' : '';
+
+  $('list').innerHTML = sorted.map(function (p) {
+    return '<li><span>' + p.hole + ' &middot; ' + LABEL[p.point] + '</span>' +
+      '<span>&plusmn;' + p.accuracy + ' m ' +
+      '<button data-h="' + p.hole + '" data-p="' + p.point + '">Delete</button></span></li>';
+  }).join('');
+
+  $('list').querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var h = parseInt(b.dataset.h, 10), pt = b.dataset.p;
+      points = points.filter(function (p) { return !(p.hole === h && p.point === pt); });
+      save();
+      draw();
+    });
+  });
+
+  $('out').value = points.length ? buildJSON() : '';
+  $('demoNote').classList.toggle('hidden', !hasDemo());
+  $('btnDemo').textContent = hasDemo() ? 'Clear demo course' : 'Load demo course';
+  renderMap();
+}
+
+function buildJSON() {
+  var byHole = {};
+
+  points.forEach(function (p) {
+    var h = byHole[p.hole] || (byHole[p.hole] = { hole: p.hole });
+    h[p.point] = { lat: p.lat, lon: p.lon };
+    if (p.par) h.par = p.par;
+    if (p.cardYards) h.cardYards = p.cardYards;
+  });
+
+  var holes = Object.keys(byHole)
+    .map(Number)
+    .sort(function (a, b) { return a - b; })
+    .map(function (k) {
+      var h = byHole[k];
+      // Key order chosen to match data/course.json for easy diffing.
+      var out = { hole: h.hole };
+      if (h.par) out.par = h.par;
+      if (h.cardYards) out.cardYards = h.cardYards;
+      ['tee', 'front', 'center', 'back'].forEach(function (p) {
+        if (h[p]) out[p] = h[p];
+      });
+      return out;
+    });
+
+  // Demo coordinates must never be exportable as a real survey — the app
+  // keys its "not mapped yet" banner off exactly this flag.
+  var demo = hasDemo();
+
+  return JSON.stringify({
+    mapped: !demo,
+    _demo: demo || undefined,
+    courseName: demo ? 'Demo Course (not real)' : 'Home Course',
+    mappedOn: new Date().toISOString().slice(0, 10),
+    holes: holes
+  }, null, 2);
+}
+
+/* -- Wiring -------------------------------------------------------------- */
+
+$('btnRecord').addEventListener('click', record);
+
+$('btnDemo').addEventListener('click', function () {
+  if (hasDemo()) {
+    points = points.filter(function (p) { return !p.demo; });
+  } else {
+    var real = points.filter(function (p) { return !p.demo; });
+    if (real.length && !confirm(
+      'Loading the demo will sit alongside your ' + real.length +
+      ' recorded point(s) and block export until you clear it. Continue?')) return;
+    points = real.concat(demoPoints());
+  }
+  latestKey = null;
+  save();
+  draw();
+});
+
+$('btnCopy').addEventListener('click', function () {
+  var ta = $('out');
+  if (!ta.value) return;
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(ta.value).then(function () {
+      $('btnCopy').textContent = 'Copied';
+      setTimeout(function () { $('btnCopy').textContent = 'Copy JSON'; }, 1500);
+    });
+  } else {
+    ta.removeAttribute('readonly');
+    ta.select();
+    document.execCommand('copy');
+    ta.setAttribute('readonly', '');
+  }
+});
+
+$('btnDownload').addEventListener('click', function () {
+  if (!$('out').value) return;
+  var blob = new Blob([$('out').value], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'course.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+$('btnClear').addEventListener('click', function (e) {
+  e.preventDefault();
+  if (!confirm('Delete all recorded points?')) return;
+  points = [];
+  save();
+  draw();
+});
+
+restore();
+draw();
+</script>
+</body>
+</html>

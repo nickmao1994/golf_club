@@ -1,0 +1,13 @@
+{
+  "_readme": "Daily course status. This is the one file that needs a human. Update 'updatedAt' every time — the app greys the panel out after staleHours.",
+  "_demo": true,
+  "_placeholder": "Made-up conditions, to show the panel working. Note that the demo goes stale on its own: once 'updatedAt' is more than 'staleHours' old the card greys out and says so, which is the guard working rather than a bug.",
+  "staleHours": 18,
+  "updatedAt": "2026-10-30T14:00:00Z",
+  "updatedBy": "Coach",
+  "open": true,
+  "cartsAllowed": false,
+  "greenHeightMm": 3.5,
+  "roughHeightMm": 50,
+  "notes": "Carts path-only after Wednesday's rain. Temporary green on 6. Frost delay possible before 9am."
+}
