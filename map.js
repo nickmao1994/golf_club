@@ -121,15 +121,44 @@ var GolfMap = (function () {
     return (dx || dy) ? Math.atan2(dx, dy) : 0;
   }
 
-  /** A needle, so a map turned down the fairway still says where north is. */
+  /** A needle, so a map turned down the fairway still says where north is.
+
+      Three things it has to get right. The letter rides at the needle's point
+      instead of sitting at a fixed spot beside it — pinned, it lands on the
+      opposite side from the point whenever the hole runs east or west, which
+      is half of them, and a compass whose N argues with its needle is worse
+      than no compass. The point is a solid head rather than a dot, because at
+      ten pixels a dot at one end of a straight line is not a direction. And it
+      is drawn even when the map is north-up: that the map happens not to be
+      turned is exactly what a reader cannot tell by looking. */
   function drawNorth(svg, rot, w) {
-    var x = w - 20, y = 20, len = 9;
-    var dx = -Math.sin(rot) * len, dy = -Math.cos(rot) * len;
-    svg.appendChild(el('line',
-      { class: 'north', x1: x - dx, y1: y - dy, x2: x + dx, y2: y + dy }));
-    svg.appendChild(el('circle', { class: 'north-tip', cx: x + dx, cy: y + dy, r: 2.5 }));
-    svg.appendChild(el('text',
-      { class: 'scale-txt', x: x - 14, y: y + 4, 'text-anchor': 'end' }, 'N'));
+    // Sits clear of the top edge: with north straight up the letter is the
+    // highest thing drawn, and at y = 26 it clipped out of the viewBox.
+    var x = w - 26, y = 34, len = 10;
+
+    // North, as a unit vector in screen space: x right, y down.
+    var ux = -Math.sin(rot || 0), uy = -Math.cos(rot || 0);
+    var px = -uy, py = ux;                        // across the needle
+    var tipX = x + ux * len, tipY = y + uy * len;
+
+    svg.appendChild(el('line', {
+      class: 'north',
+      x1: x - ux * len, y1: y - uy * len, x2: tipX, y2: tipY
+    }));
+
+    svg.appendChild(el('polygon', {
+      class: 'north-tip',
+      points: [
+        (tipX + ux * 4) + ',' + (tipY + uy * 4),
+        (tipX - ux * 2 + px * 3) + ',' + (tipY - uy * 2 + py * 3),
+        (tipX - ux * 2 - px * 3) + ',' + (tipY - uy * 2 - py * 3)
+      ].join(' ')
+    }));
+
+    svg.appendChild(el('text', {
+      class: 'scale-txt', 'text-anchor': 'middle',
+      x: x + ux * (len + 8), y: y + uy * (len + 8) + 3.5
+    }, 'N'));
   }
 
   /** A bar to measure yardages against. Picks the longest round number that
@@ -361,7 +390,7 @@ var GolfMap = (function () {
     hits.forEach(function (n) { svg.appendChild(n); });
 
     drawScaleBar(svg, proj.scale, box.w, box.h);
-    if (rot) drawNorth(svg, rot, box.w);
+    drawNorth(svg, rot, box.w);
     return { drawn: true, meOffMap: offMap };
   }
 

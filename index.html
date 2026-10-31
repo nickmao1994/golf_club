@@ -161,7 +161,13 @@
     <div class="card" id="mapCard">
       <div class="card-head">
         <h2>Where you are</h2>
-        <button class="btn-small" id="btnMapView" aria-pressed="false">Whole course</button>
+        <div class="map-btns">
+          <!-- Only meaningful on a single hole: the course view is north-up
+               already, so this hides itself there. -->
+          <button class="btn-small btn-quiet" id="btnMapRotate"
+                  aria-pressed="false">North up</button>
+          <button class="btn-small" id="btnMapView" aria-pressed="false">Whole course</button>
+        </div>
       </div>
 
       <svg class="map" id="holeMap" viewBox="0 0 320 400" role="img"

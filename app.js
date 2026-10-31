@@ -17,6 +17,8 @@ const $ = id => document.getElementById(id);
 
 const state = {
   course: null, holeIndex: 0, position: null, mapView: 'hole', weatherAt: 0,
+  // true turns the single-hole map north-up instead of down the fairway.
+  mapNorth: false,
   // true while 'position' is the example ball rather than a real GPS fix.
   demoFix: false
 };
@@ -732,7 +734,7 @@ function drawMap() {
     pick: whole,
     // One hole reads best facing down the fairway; the whole course reads
     // best north-up, the way the clubhouse signboard draws it.
-    rotate: whole ? null : 'play',
+    rotate: whole || state.mapNorth ? null : 'play',
     aim: !whole,
     // Second line of defence behind the banner: an example layout says so on
     // its face, so a screenshot of it can never pass for the real course.
@@ -751,7 +753,11 @@ function drawMap() {
   const note = [];
   if (example) note.push('Example layout — not this course.');
   if (whole) note.push('Tap a number to go to that hole.');
-  if (!whole) note.push('Up the screen is the line to the green.');
+  if (!whole) {
+    note.push(state.mapNorth
+      ? 'North is up the screen.'
+      : 'Up the screen is the line to the green.');
+  }
   if (state.demoFix) note.push('The marker is an example ball, not you.');
   else if (!state.position) note.push('Tap “Locate me” to put yourself on the map.');
   else if (out.meOffMap) note.push('Your fix is well away from the mapped holes, so it is not drawn.');
@@ -759,11 +765,46 @@ function drawMap() {
   $('mapNote').textContent = note.join(' ');
 }
 
+/* Which way up the hole map is drawn. Down the fairway is the default and
+   the better one for playing a hole — it is how the hole looks from the tee.
+   North-up is for the player who is orienting rather than aiming: matching the
+   map to a signboard, a printed card, or the course as they already know it.
+   Neither is right for everyone, so it is a choice rather than a decision, and
+   it is remembered — a preference you have to re-make on every hole is not a
+   preference. */
+const NORTH_KEY = 'golfclub.mapNorth';
+
+function setMapNorth(north) {
+  state.mapNorth = !!north;
+  try {
+    localStorage.setItem(NORTH_KEY, north ? '1' : '0');
+  } catch (e) {
+    // Private mode, or storage turned off. The choice still holds for now.
+  }
+
+  const btn = $('btnMapRotate');
+  if (!btn) return;
+  btn.textContent = north ? 'Fairway up' : 'North up';
+  btn.setAttribute('aria-pressed', north ? 'true' : 'false');
+}
+
+function loadMapNorth() {
+  let saved = false;
+  try { saved = localStorage.getItem(NORTH_KEY) === '1'; } catch (e) {}
+  setMapNorth(saved);
+}
+
 /** The toggle's two states in one place, now that a tap on the map sets it
     as well as the button does. Redrawing is left to the caller: picking a hole
     changes more than the map. */
 function setMapView(whole) {
   state.mapView = whole ? 'course' : 'hole';
+
+  // Eighteen holes run in every direction, so there is no fairway to face:
+  // the course view is north-up and the choice does not apply.
+  const rotBtn = $('btnMapRotate');
+  if (rotBtn) rotBtn.classList.toggle('hidden', whole);
+
   const btn = $('btnMapView');
   if (!btn) return;
   btn.textContent = whole ? 'This hole' : 'Whole course';
@@ -1012,6 +1053,12 @@ function initTabs() {
     setMapView(state.mapView !== 'course');
     drawMap();
   });
+
+  $('btnMapRotate').addEventListener('click', () => {
+    setMapNorth(!state.mapNorth);
+    drawMap();
+  });
+  loadMapNorth();
 
   initMapPick();
 

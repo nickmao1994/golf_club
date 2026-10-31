@@ -14,6 +14,10 @@
   --alert-bg:   #ffe5e2;
   --alert-line: #d9544a;
   --alert-text: #7a1c15;
+  /* The loss pill is 11px bold on a colour fill, so it needs 4.5:1 like any
+     small text. --alert-line is tuned for borders and large figures and
+     only reaches 3.95:1 under white; this is the same red, darker. */
+  --pill-loss:  #c0392b;
   --tap: 48px;
 }
 
@@ -32,6 +36,7 @@
     --alert-bg:   #3d1512;
     --alert-line: #b8463c;
     --alert-text: #ffcdc7;
+    --pill-loss:  #b8463c;   /* already 5.28:1 under white */
   }
 }
 
@@ -52,7 +57,9 @@ body {
 /* ── Header ── */
 .topbar {
   background: var(--green);
-  color: #fff;
+  /* Not #fff: see .btn-small. The bar is --green, which goes LIGHT in dark
+     mode, and white on it measures 2.37:1. */
+  color: var(--surface);
   padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
 }
 .topbar h1 { margin: 0; font-size: 1.25rem; letter-spacing: -0.01em; }
@@ -79,6 +86,10 @@ main { padding: 16px; max-width: 640px; margin: 0 auto; }
 /* The header must never squeeze; a long "last updated" note wraps below it. */
 .card-head h2 { flex: 0 0 auto; }
 .stamp { font-size: 0.75rem; color: var(--text-dim); margin-left: auto; }
+.map-btns {
+  display: flex; gap: 8px; margin-left: auto;
+  flex-wrap: wrap; justify-content: flex-end;
+}
 
 /* A status panel nobody has refreshed is worse than none — fade it. */
 .card.stale { opacity: 0.55; }
@@ -158,12 +169,22 @@ dl.kv dd { margin: 0; font-variant-numeric: tabular-nums; }
 .btn-small {
   min-height: var(--tap); min-width: var(--tap);
   padding: 0 18px; font-size: 1rem; font-weight: 600;
-  color: #fff; background: var(--green); border: 0; border-radius: 10px;
+  /* --green is a dark green in light mode and a light one in dark, because
+     it doubles as accent text. As a button fill that flips which text
+     colour works, and hard-coded white came out at 2.37:1 in dark mode — on
+     a screen read at arm's length in sunlight. --surface is white exactly
+     when --green is dark and near-black when it is light: 6.3:1 and 6.9:1. */
+  color: var(--surface); background: var(--green); border: 0; border-radius: 10px;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .btn-small:active { background: var(--green-dark); }
 
-.btn-quiet { background: var(--text-dim); }
+/* Takes its text colour from the surface rather than inheriting the white of
+   .btn-small. In dark mode --text-dim is a LIGHT grey, so white on it came out
+   at about 2.5:1 — unreadable in sunlight and failing WCAG either way. Pairing
+   it with --surface flips to dark text exactly when the background goes light:
+   5.3:1 in light mode, 6.5:1 in dark. */
+.btn-quiet { background: var(--text-dim); color: var(--surface); }
 .btn-quiet:active { background: var(--text); }
 
 /* ── Lightning ── */
@@ -216,7 +237,7 @@ dl.kv dd { margin: 0; font-variant-numeric: tabular-nums; }
   border: 1px solid var(--line); border-radius: 20px;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
-.chip.on { background: var(--green); border-color: var(--green); color: #fff; }
+.chip.on { background: var(--green); border-color: var(--green); color: var(--surface); }
 
 /* ── Lists ── */
 .item {
@@ -231,10 +252,11 @@ dl.kv dd { margin: 0; font-variant-numeric: tabular-nums; }
   display: inline-block; font-size: 0.6875rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.06em;
   padding: 3px 8px; border-radius: 20px; margin-right: 8px;
-  background: var(--green); color: #fff;
+  background: var(--green); color: var(--surface);
 }
 .pill.match { background: var(--green-dark); }
-.pill.loss  { background: var(--alert-line); }
+/* The red stays dark in both themes, so this one really does want white. */
+.pill.loss  { background: var(--pill-loss); color: #fff; }
 
 table.card-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9375rem; }
 table.card-table td { padding: 6px 0; border-top: 1px solid var(--line); }

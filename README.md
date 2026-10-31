@@ -801,3 +801,94 @@ and neither does an off-course fix, which already has its own message.
 That turns a puzzling number into an orientation, and the map's hole numbers
 are one tap away from acting on it.
 # golf_club
+
+## North on a map that turns
+
+The single-hole map is rotated so the tee shot points up the screen, which is
+how a hole is read standing on the tee. That makes the compass load-bearing:
+up is not north, and only the needle says which way is.
+
+The needle's **direction was always right** — checked against the true bearing
+of all eighteen tee shots, zero mismatches. Three things around it were not:
+
+- **The letter was pinned.** `N` was drawn at a fixed offset of (−14, +4) from
+  the needle's centre while the needle rotated, so on any hole running east it
+  sat on the side opposite the point. A compass whose N argues with its needle
+  is worse than no compass. It now rides at the point.
+- **The point was a dot.** A 2.5px circle at one end of a 20px line is not a
+  direction at arm's length in sunlight. It is a filled arrowhead now.
+- **The course map had no compass at all**, because it was drawn only when
+  `rot` was non-zero. That the map happens *not* to be turned is exactly what a
+  reader cannot tell by looking — so it is drawn always, pointing up when the
+  map is north-up.
+
+One trap worth recording: with north straight up, the letter is the highest
+thing on the map, and at the original `y` it clipped out of the top of the
+viewBox (`minY = −2`). The compass sits lower now, and the check is that the
+needle, head and letter all stay inside 320×400 on every hole and in the
+course view — measured extent `[273, 10, 315, 58]`.
+
+The maths, for anyone touching it: `playAngle()` returns a compass bearing
+θ clockwise from north, `makeProjection` turns the world by θ so the play
+direction lands on screen-up, and north therefore lands on
+`(−sinθ, −cosθ)` in screen coordinates — which is exactly what `drawNorth`
+draws along.
+
+## Which way up the hole map is
+
+A second button on the map card, **North up** / **Fairway up**.
+
+Down the fairway is the default and the better one for *playing* a hole — it
+is how the hole looks standing on the tee. North-up is for the player who is
+orienting rather than aiming: matching the map to the signboard, a printed
+card, or the course as they already know it. Neither is right for everyone, so
+it is a choice rather than a decision.
+
+- **Remembered**, in `localStorage` under `golfclub.mapNorth`. A preference you
+  have to re-make on every hole is not a preference. Wrapped in try/catch like
+  the others, and the choice still holds for the session if storage is off.
+- **Hidden in the course view.** Eighteen holes run in every direction, so
+  there is no fairway to face; that view is north-up and the choice does not
+  apply.
+- **The note under the map changes with it** — *North is up the screen* rather
+  than *Up the screen is the line to the green* — because the map alone cannot
+  say which rule it is following.
+
+The check that it is really doing what it claims: in north-up mode the
+on-screen bearing from tee to green equals the hole's true compass bearing on
+all eighteen holes, to 0.0°.
+
+## Contrast: the green token does two jobs
+
+Verifying the new button in dark mode turned up something larger. `--green` is
+a *dark* green in light mode and a *light* one in dark mode, because it doubles
+as accent text and has to stay legible on each background. Used as a **fill**
+with hard-coded `#fff` text, that flips which text colour works — and in dark
+mode white on it measured **2.37:1**, on an app whose whole point is being read
+at arm's length in sunlight.
+
+It was not one button. It was every primary button, the scorecard chips, the
+result pills and the header bar.
+
+The fix is one idea applied five times: take the text colour from
+`var(--surface)`, which is white exactly when `--green` is dark and near-black
+when it is light. `.btn-quiet` had the same bug mirrored — white on a *light*
+grey in dark mode, 2.53:1.
+
+Measured after, lowest value of any text-on-fill in the app:
+
+| | light | dark |
+|---|---|---|
+| header bar, primary buttons, chips, win pills | 6.51 | 6.92 |
+| quiet buttons | 5.93 | 6.56 |
+| loss pills | 5.44 | 5.28 |
+
+The loss pill needed its own token. It is 11px bold on a colour fill, so it
+needs the full 4.5:1 like any small text, and `--alert-line` is tuned for
+borders and large figures — only 3.95:1 under white. `--pill-loss` is the same
+red, darker. That one predates all of this; it only showed up because
+everything got measured.
+
+**If you add a coloured fill later**, pair it with `var(--surface)` rather than
+`#fff`, or check it in both themes. `#fff` on a themed background is right half
+the time by construction.
