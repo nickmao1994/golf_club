@@ -19,6 +19,11 @@ const state = {
   course: null, holeIndex: 0, position: null, mapView: 'hole', weatherAt: 0,
   // true turns the single-hole map north-up instead of down the fairway.
   mapNorth: false,
+  // A map turned by hand: radians, or null to follow mapNorth. mapRot is
+  // whatever angle was last drawn, which is where a new drag starts from.
+  mapTurn: null, mapRot: 0,
+  // When a turn last ended, so the click it produces can be ignored.
+  turnedAt: 0,
   // true while 'position' is the example ball rather than a real GPS fix.
   demoFix: false
 };
@@ -656,6 +661,10 @@ function drawHole() {
   // demonstrates itself. A real fix is never overwritten.
   if (state.demoFix) setDemoPlayer();
 
+  // Each hole gets its own orientation. Carrying a hand-turn across would
+  // leave the next hole skewed by an angle that meant something on the last.
+  state.mapTurn = null;
+
   $('holeNum').textContent = 'Hole ' + h.hole;
   $('holeMeta').textContent = [
     h.par ? 'Par ' + h.par : '',
@@ -734,13 +743,20 @@ function drawMap() {
     pick: whole,
     // One hole reads best facing down the fairway; the whole course reads
     // best north-up, the way the clubhouse signboard draws it.
-    rotate: whole || state.mapNorth ? null : 'play',
+    // A map turned by hand outranks both modes until it is let go of.
+    rotate: state.mapTurn != null
+      ? state.mapTurn
+      : (whole || state.mapNorth ? null : 'play'),
     aim: !whole,
     // Second line of defence behind the banner: an example layout says so on
     // its face, so a screenshot of it can never pass for the real course.
     watermark: example ? 'Example layout' : null,
     empty: 'This hole has no coordinates yet.'
   });
+
+  // Remember what was actually drawn: a drag starts from the angle on screen,
+  // not from the mode that produced it.
+  if (out && typeof out.rot === 'number') state.mapRot = out.rot;
 
   // The map is a picture; without this it says nothing to a screen reader.
   const said = [
@@ -753,7 +769,8 @@ function drawMap() {
   const note = [];
   if (example) note.push('Example layout — not this course.');
   if (whole) note.push('Tap a number to go to that hole.');
-  if (!whole) {
+  if (state.mapTurn != null) note.push('Turned by hand.');
+  else if (!whole) {
     note.push(state.mapNorth
       ? 'North is up the screen.'
       : 'Up the screen is the line to the green.');
@@ -776,6 +793,8 @@ const NORTH_KEY = 'golfclub.mapNorth';
 
 function setMapNorth(north) {
   state.mapNorth = !!north;
+  // Asking for an orientation by name means letting go of the one by hand.
+  state.mapTurn = null;
   try {
     localStorage.setItem(NORTH_KEY, north ? '1' : '0');
   } catch (e) {
@@ -799,6 +818,7 @@ function loadMapNorth() {
     changes more than the map. */
 function setMapView(whole) {
   state.mapView = whole ? 'course' : 'hole';
+  state.mapTurn = null;
 
   // Eighteen holes run in every direction, so there is no fairway to face:
   // the course view is north-up and the choice does not apply.
@@ -811,6 +831,93 @@ function setMapView(whole) {
   btn.setAttribute('aria-pressed', whole ? 'true' : 'false');
 }
 
+/* Turning the map by hand.
+
+   Held and dragged, the map follows the finger, so it can be lined up with
+   what the player is actually looking at. Three things make that workable on
+   a phone rather than merely possible:
+
+   It takes a HOLD to start. A map is a big target in the middle of a
+   scrolling page, and a drag that rotated immediately would eat every attempt
+   to scroll past it. Waiting for a still finger means a scroll never becomes
+   a rotation by accident — and it is what "hold on the map and rotate"
+   describes.
+
+   It is abandoned the moment the finger moves first. If the touch travels
+   before the hold lands, it was a scroll, and the timer is dropped.
+
+   It suppresses the tap that would otherwise follow. The whole-course map
+   turns hole numbers into buttons; without this, letting go after a turn
+   would also jump to whichever hole was under the thumb. */
+const TURN_HOLD_MS = 350;
+const TURN_SLOP_PX = 10;   // movement before the hold that means "scrolling"
+
+function initMapTurn() {
+  const svg = $('holeMap');
+  if (!svg || !window.PointerEvent) return;
+
+  let timer = null, turning = false, moved = false;
+  let startAng = 0, startRot = 0, downX = 0, downY = 0;
+
+  // Screen angle from the middle of the map, counter-clockwise, which is the
+  // sense the projection turns in. Measured in client pixels: the SVG scales
+  // to the card, so its own units would be the wrong ruler.
+  const angleAt = e => {
+    const r = svg.getBoundingClientRect();
+    return Math.atan2(-(e.clientY - (r.top + r.height / 2)),
+                        e.clientX - (r.left + r.width / 2));
+  };
+
+  const stop = () => {
+    clearTimeout(timer);
+    timer = null;
+    if (turning) svg.classList.remove('turning');
+    turning = false;
+  };
+
+  svg.addEventListener('pointerdown', e => {
+    if (!e.isPrimary || e.button > 0) return;
+    moved = false;
+    downX = e.clientX;
+    downY = e.clientY;
+
+    timer = setTimeout(() => {
+      turning = true;
+      moved = false;
+      startAng = angleAt(e);
+      startRot = state.mapRot;
+      svg.classList.add('turning');
+      try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+    }, TURN_HOLD_MS);
+  });
+
+  svg.addEventListener('pointermove', e => {
+    if (!turning) {
+      // Still waiting on the hold: any real travel means this was a scroll.
+      if (timer && Math.hypot(e.clientX - downX, e.clientY - downY) > TURN_SLOP_PX) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      return;
+    }
+    moved = true;
+    e.preventDefault();
+    state.mapTurn = startRot + (angleAt(e) - startAng);
+    drawMap();
+  });
+
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(type => {
+    svg.addEventListener(type, () => {
+      // A turn ends in a click the map must not act on. Recorded as a time
+      // rather than armed as a one-shot listener: a gesture that ends off the
+      // element never produces that click, and the listener would have sat
+      // there waiting to swallow the next real tap instead.
+      if (turning && moved) state.turnedAt = Date.now();
+      stop();
+    });
+  });
+}
+
 /** Tap a hole number on the whole-course map to go to that hole.
 
     Pointer only, deliberately. Every hole is already reachable from the
@@ -821,6 +928,10 @@ function initMapPick() {
   if (!svg) return;
 
   svg.addEventListener('click', e => {
+    // Letting go after turning the map lands a click on whatever was under
+    // the thumb. That is not a choice of hole.
+    if (Date.now() - state.turnedAt < 400) return;
+
     const hit = e.target.closest && e.target.closest('[data-hole]');
     if (!hit) return;
 
@@ -1061,6 +1172,7 @@ function initTabs() {
   loadMapNorth();
 
   initMapPick();
+  initMapTurn();
 
   // Club data first: it carries the feature flags that decide what renders.
   let club = null;

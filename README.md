@@ -892,3 +892,41 @@ everything got measured.
 **If you add a coloured fill later**, pair it with `var(--surface)` rather than
 `#fff`, or check it in both themes. `#fff` on a themed background is right half
 the time by construction.
+
+## Turning the map by hand
+
+Hold the map for a moment, then drag: it follows your finger, so it can be
+lined up with what you are actually looking at. Let go and it stays there
+until something says otherwise.
+
+**Why a hold and not just a drag.** The map is a big target in the middle of a
+scrolling page. A drag that rotated immediately would eat every attempt to
+scroll past it, which is most of the attempts. Waiting for a still finger
+means a scroll can never become a rotation by accident — and if the touch
+travels before the hold lands, the gesture is dropped as the scroll it was.
+`touch-action` is `pan-y` normally and `none` only while turning, so the page
+keeps scrolling over the map right up to the moment it does not need to.
+
+**It has to say it is listening.** A long press with no acknowledgement reads
+as a dead control, so the border turns green the instant the hold lands.
+
+**The tap it leaves behind.** On the course map the hole numbers are buttons,
+so letting go after a turn lands a click on whatever was under the thumb. The
+map records when a turn ended and the pick handler ignores clicks for 400 ms
+after. That is a timestamp rather than a one-shot listener on purpose: a
+gesture that ends off the element never produces that click, and an armed
+listener would have sat there waiting to swallow the next real tap instead.
+
+**It resets, deliberately.** Stepping to another hole, switching to the course
+view, or tapping North up / Fairway up all drop the hand-turn. Each hole has
+its own orientation; carrying an angle across would leave the next hole skewed
+by something that meant nothing there. It is also not persisted — unlike the
+North up choice, which is a preference, a hand-turn is a moment.
+
+The angle comes back out of the renderer (`render()` now returns `rot`) rather
+than being recomputed, so a drag starts from the angle actually on screen
+whoever worked it out — the mode, or the last drag.
+
+Redrawing the whole map each frame costs 0.09 ms on a single hole and 0.57 ms
+across all eighteen, against a 16.7 ms frame budget, so there is no throttling
+and none is needed.

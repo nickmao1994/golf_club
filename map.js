@@ -202,13 +202,15 @@ var GolfMap = (function () {
    * opts.me         {lat, lon, accuracy} - accuracy in metres, drawn to scale
    * opts.highlight  {lat, lon} ringed for emphasis (the point just recorded)
    * opts.labels     'hole' (number by each tee), 'detail' (Tee / Green), 'none'
-   * opts.rotate     'play' turns the map so the tee shot points up the screen
+   * opts.rotate     'play' turns the map so the tee shot points up the screen;
+   *                  a number is that angle in radians, for a map turned by hand
    * opts.aim        draw the line from you to the green you are playing to
    * opts.pick       add a tap target over each hole number, tagged data-hole
    * opts.watermark  faint text across the map, for layouts that are not real
    * opts.empty      text shown when there is nothing to draw
    *
-   * Returns {drawn, meOffMap} so the caller can explain what it is showing.
+   * Returns {drawn, meOffMap, rot} — the angle included so a caller dragging
+   * the map has something to drag from, whoever worked it out.
    */
   function render(svg, opts) {
     opts = opts || {};
@@ -226,7 +228,7 @@ var GolfMap = (function () {
           x: box.w / 2, y: box.h / 2, 'text-anchor': 'middle', class: 'empty-txt'
         }, opts.empty));
       }
-      return { drawn: false, meOffMap: false };
+      return { drawn: false, meOffMap: false, rot: 0 };
     }
 
     // A fix hundreds of miles out - a desktop browser guessing from the
@@ -244,7 +246,9 @@ var GolfMap = (function () {
     // Facing down the fairway is how a hole is read on the tee, and it fills
     // the frame whichever way the hole happens to run.
     var rot = 0;
-    if (opts.rotate === 'play' && holes.length === 1) {
+    if (typeof opts.rotate === 'number' && isFinite(opts.rotate)) {
+      rot = opts.rotate;
+    } else if (opts.rotate === 'play' && holes.length === 1) {
       var one = holes[0];
       // Face the way the tee shot is hit, which on a dogleg is the corner
       // rather than the green. Lining up on the green instead turns the hole
@@ -391,7 +395,7 @@ var GolfMap = (function () {
 
     drawScaleBar(svg, proj.scale, box.w, box.h);
     drawNorth(svg, rot, box.w);
-    return { drawn: true, meOffMap: offMap };
+    return { drawn: true, meOffMap: offMap, rot: rot };
   }
 
   return { render: render, groupByHole: groupByHole };
