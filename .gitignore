@@ -1,0 +1,39 @@
+# Nothing here is built. The app is these files, served exactly as they are,
+# so this list is not about build output — it is about what an operating
+# system, an editor or a stray download leaves next to the source, and what
+# `git add -A` would otherwise sweep in.
+
+# Operating system clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local Claude Code state. .claude/launch.json is deliberately NOT ignored:
+# it is how the dev server starts, and whoever inherits this needs it.
+.claude/settings.local.json
+.claude/*.local.json
+
+# Secrets. None exist today — the weather API takes no key and there is no
+# backend — and if that ever changes, a static site cannot keep a secret
+# anyway: anything shipped to the browser is public. This is here so a stray
+# .env never gets committed on the way to finding that out.
+.env
+.env.*
+!.env.example
+
+# Only if tooling is ever added — there is none today, and the app is meant
+# to stay buildable by whoever inherits it without installing anything.
+node_modules/
+*.log
+
+# Scratch. The course mapper exports JSON through the browser's download
+# folder; a copy saved here by hand belongs pasted into data/course.json,
+# not committed beside it.
+*.tmp
+scratch/
