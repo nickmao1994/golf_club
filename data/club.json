@@ -21,12 +21,13 @@
     "statusCsv": ""
   },
   "homeCourse": {
-    "name": "Home Course",
-    "latitude": 36.5665,
-    "longitude": -121.9465,
-    "note": "STILL A PLACEHOLDER. These are the example course in data/course.json (Pebble Beach), so the weather card matches the layout on the Yardage tab while the club's own course is unmapped. Set them to the real course coordinates — they drive the weather forecast, and until they change it is forecasting the wrong coastline.",
-    "forecastUrl": "",
-    "_forecastUrl": "Where the weather card's 'Full forecast and radar' link points. Leave empty to build a Windy link from the coordinates above, which works anywhere. For a US course, https://forecast.weather.gov/MapClick.php?lat=LAT&lon=LON is the National Weather Service page; in Canada use the Environment Canada page for the nearest city."
+    "name": "Blair Academy Golf Course",
+    "address": "2 Park Street, Blairstown, NJ 07825",
+    "latitude": 40.9883,
+    "longitude": -74.9688,
+    "note": "The club's own course: the centre of the nine mapped holes in data/course.json, so the weather card and the Yardage tab are describing the same patch of ground. Change these only if the course does.",
+    "forecastUrl": "https://forecast.weather.gov/MapClick.php?lat=40.9883&lon=-74.9688",
+    "_forecastUrl": "Where the weather card's 'Full forecast and radar' link points. This is the National Weather Service page for the course, which is the right one for a US course. Leave it empty to build a Windy link from the coordinates above instead, which works anywhere."
   },
   "about": [
     "Replace these paragraphs with the club introduction. Who the club is for, what a typical week looks like, what a new member should expect at their first practice.",

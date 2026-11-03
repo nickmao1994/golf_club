@@ -22,9 +22,9 @@
 <main>
   <!-- Sits above every tab while club.json has "demo": true. -->
   <div class="banner hidden" id="demoBanner">
-    <strong>Demo data.</strong> The schedule, results, course status and
-    yardages here are invented, to show how the app works. Nothing on this
-    screen is real club information.
+    <strong>Demo data.</strong> The schedule, results and course status here
+    are invented, to show how the app works. The course map and the distances
+    on the Yardage tab are the only real club information on screen.
   </div>
 
   <!-- ───────── Today ───────── -->
@@ -181,6 +181,11 @@
       </div>
 
       <p class="note" id="mapNote"></p>
+
+      <!-- Where the hole coordinates came from. The ODbL asks for the credit
+           to travel with the data, and an example course prints it in the
+           banner instead — which a mapped course never shows. -->
+      <p class="note credit hidden" id="courseSource"></p>
     </div>
   </section>
 

@@ -651,6 +651,12 @@ async function initYardage() {
     $('accuracy').textContent =
       'Example ball on an example course — not a GPS fix. '
       + 'Tap “Locate me” to measure from where you are.';
+  } else if (state.course.attribution) {
+    // The credit has to outlive the banner it used to sit in: the licence
+    // asks for it to travel with the data, and the data is still the data.
+    const credit = $('courseSource');
+    credit.textContent = 'Hole coordinates: ' + state.course.attribution + '.';
+    credit.classList.remove('hidden');
   }
 
   drawHole();
@@ -1003,12 +1009,15 @@ function drawHoleHint() {
 /** A believable spot somewhere on the course: a random hole, a random point
     along it, and up to 25 yards either side of the line of play.
 
-    This exists because of how the demo reads. The example course is Pebble
-    Beach and almost nobody opening the published site is standing on it, so a
-    real fix correctly answers "that is not on this course" and leaves three
-    dashes — which looks broken rather than careful. Inventing a position on
-    an invented course costs nothing: the banner, the watermark on the map and
-    the line under the yardages all say what it is. */
+    This exists because of how the demo reads. An example course is somewhere
+    almost nobody opening the published site is standing, so a real fix
+    correctly answers "that is not on this course" and leaves three dashes —
+    which looks broken rather than careful. Inventing a position on a course
+    that is not yours costs nothing: the banner, the watermark on the map and
+    the line under the yardages all say what it is.
+
+    Unreached while data/course.json is the club's own course, and kept for
+    whoever puts an example one back. */
 function randomCoursePosition() {
   const holes = (state.course && state.course.holes) || [];
   if (!holes.length) return null;

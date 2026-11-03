@@ -97,9 +97,9 @@ the preview: put the link in `externalUrl` and set `results` to `true`.
 | Flag | Turn on once | Phase |
 |---|---|---|
 | — | Club intro, photos, schedule and contacts are real in `data/club.json` and `data/schedule.json` | 1 |
-| `weather` | `homeCourse` holds the real course coordinates | 2 |
+| `weather` | `homeCourse` holds the real course coordinates — **done**: Blair Academy, 40.9883, -74.9688 | 2 |
 | `status` | A named person has committed to updating `data/status.json` daily | 2 |
-| `yardage` | `"preview"` to announce it now; `true` once `data/course.json` has `"mapped": true` from a real walk | 3–4 |
+| `yardage` | `"preview"` to announce it now; `true` once `data/course.json` has `"mapped": true` — **mapped** from survey data; still wants a walk-round to confirm it | 3–4 |
 | `results` | `"preview"` to announce it now; `true` once the scoring format is agreed and the first match is in `data/results.json` | 5 |
 
 With every flag off, the app is exactly the Phase 1 deliverable: club
@@ -113,7 +113,9 @@ exists. That is the exact situation the gates were built to prevent, so it is
 fenced:
 
 - `data/club.json` → `"demo": true` puts a banner above every tab saying the
-  schedule, results, status and yardages are invented.
+  schedule, results and status are invented. It no longer says that of the
+  yardages: the course is real, and the banner names the Yardage tab as the
+  one place on screen that is.
 - Each demo file carries `"_demo": true` and a `_placeholder` note saying to
   delete its contents rather than edit them.
 
@@ -133,8 +135,10 @@ working:
 - The course status greys out and says "may be out of date" once its
   `updatedAt` passes `staleHours`, which the demo data will do a day after it
   was written.
-- The Yardage tab shows its "Course not mapped yet" banner over the example
-  course, because `data/course.json` still has `"mapped": false`.
+- The Yardage tab does **not** show its "Course not mapped yet" banner, and
+  the yardages are not demo data: `data/course.json` is the club's own course,
+  mapped, and the banner above says so by naming the four things that are
+  invented.
 
 ### What Phase 1 still needs
 
@@ -148,7 +152,8 @@ All of it is content, none of it is code. In `data/club.json`:
   happy to publish.
 - `photos` — add files to the repo and list them with captions. The Photos card
   hides itself while no photo has a `src`, so it never shows an empty grid.
-- `homeCourse` — the course name. The coordinates can wait for Phase 2.
+- `homeCourse` — done. Blair Academy Golf Course, and the coordinates
+  the weather card forecasts for.
 
 And in `data/schedule.json`, the real practices and matches. The schedule
 filters out past dates, so the placeholder events will quietly vanish rather
@@ -553,52 +558,42 @@ icons/                  Placeholder icons — replace with real artwork
 `icons/` holds generated placeholders. Swap in real artwork at 192px and 512px
 before anyone installs this to a home screen.
 
-## The example course
+## The course
 
-Until someone walks the real course, `data/course.json` holds a real one
-instead: **Pebble Beach Golf Links**, all eighteen holes, with an example ball
-sitting in play on whichever hole you are looking at.
+`data/course.json` is **Blair Academy Golf Course**, 2 Park Street,
+Blairstown, New Jersey — the club's own nine, par 35, with `"mapped": true`.
+That flag is what turns the Yardage tab from a demonstration into a tool: the
+"not mapped yet" banner is gone, the map is no longer watermarked, **Locate
+me** is real GPS rather than a simulated ball, and par appears on the
+scorecard.
 
-This is deliberate. The alternative — made-up coordinates near the school —
-produced a Yardage tab that showed three dashes, an empty map and an
-instruction to go outside, which demonstrates nothing and reviews badly. A real
-course with real geometry shows exactly what the feature does: step through the
-holes, watch the distances change, see the map redraw down the line of play.
+| | |
+|---|---|
+| Holes | 9 |
+| Par | 35 — 4, 3, 4, 4, 5, 3, 5, 3, 4 |
+| Measured | 2,634 yards, tee to green centre |
+| Bunkers | 24, mapped as outlines |
+| Weather | 40.9883, -74.9688 — the centre of the nine |
 
-**None of it pretends to be the club's course.** Four separate things say so,
-and all four are driven by `"mapped": false`:
+### Why 2,634 and not 2,825
 
-- the **Course not mapped yet** banner, which names the example course and
-  credits the data;
-- **Example layout** watermarked across the map, with a dashed border;
-- the line under the yardages: *Example ball on an example course — not a GPS
-  fix*;
-- par stays off the scorecard, because example coordinates carry example pars.
+`cardYards` is the straight line from the tee to the centre of the green. The
+printed white card says 2,825, and both numbers are right: the card measures
+from the back tee along the line of play, around whatever the hole bends
+around. The gap is widest on the holes that bend.
 
-### The example ball
-
-`demoPlayer()` in `app.js` puts a ball partway down the hole — 32% for a par 3,
-64% for a par 4, 74% for a par 5 — and 14 yards off the centre line, because
-nobody's ball is ever exactly on it. Step to another hole and it moves with
-you, so every hole demonstrates itself.
-
-The distances from it are not special-cased. They run through the same
-`distanceYards()` as a real fix, which is the point: what you see in the demo
-is what the student sees on the course.
-
-It carries **no accuracy value**, so the map draws the dot without a ring. An
-accuracy ring means a GPS fix, and this is not one. Tap **Locate me** and a
-real fix replaces it — `state.demoFix` goes false, the ring appears, the
-wording changes, and the example ball never comes back for that session.
+It does not matter in play, because nobody clubs off `cardYards`. It is the
+"374 yds on the card" line under the hole number, there for orientation. The
+three big numbers are measured live from where the player is standing.
 
 ### Where the data came from
 
-Hole centre-lines and green outlines are from **OpenStreetMap**, ©
+Hole centre-lines, greens and bunkers are from **OpenStreetMap**, ©
 OpenStreetMap contributors, under the
 [ODbL](https://www.openstreetmap.org/copyright). The licence asks for that
 credit to travel with the data, so it lives in `data/course.json` as
-`attribution` and the app prints it under the banner — if you replace the
-course with your own survey, delete that field and the line disappears.
+`attribution` and the app prints it under the map — if you replace the
+coordinates with your own survey, delete that field and the line disappears.
 
 Derivation, for anyone who needs to redo it:
 
@@ -606,26 +601,48 @@ Derivation, for anyone who needs to redo it:
 - **tee** — first node of each `golf=hole` way;
 - **centre** — centroid of the matching `golf=green` polygon;
 - **front** and **back** — that polygon's nearest and furthest vertices from
-  the tee, which is why green depths come out at a realistic 20–37 yards;
-- **cardYards** — measured tee to green centre, so it runs a few yards under
-  the printed card, which measures from the championship tee along the line of
-  play.
+  the tee, which is why green depths come out at a realistic 16–31 yards;
+- **cardYards** — tee to green centre, as above.
 
 Two traps worth knowing if you map another course this way. Hole ways are
-*mostly* drawn tee-to-green but not always, and a tee usually sits right beside
-the previous hole's green — so "nearest green to either end" assigns the wrong
-green. The fix is a global unique assignment: every hole gets its own green,
-cheapest matches first, nothing within 60 yards reused. The pars summing to 72
-and no duplicate greens is the check that it worked.
+*mostly* drawn tee-to-green but not always, and a tee usually sits right
+beside the previous hole's green — so "nearest green to either end" assigns
+the wrong green. The fix is a global unique assignment: every hole gets its
+own green, cheapest matches first, nothing reused. Here every hole landed on
+its own green within a metre, which is the check that it worked.
 
-### Replacing it
+A third trap cost an hour: a shoelace centroid computed on raw latitude and
+longitude loses the polygon's area in floating-point cancellation, because a
+green is a few tens of metres across at coordinates of 40.98 and -74.97. The
+centroids came out tens of metres adrift, which was enough to assign four
+holes the wrong green. Shift to metres from the first vertex first.
 
-Walk your course with `tools/map-course.html`, paste the exported JSON over the
-`holes` array, set `"mapped": true`, and drop the `_example`, `_source` and
-`attribution` fields. Also fix `homeCourse.latitude` / `longitude` in
-`data/club.json` — they currently point at Pebble Beach so the weather card
-matches the example layout, which means the app is forecasting the wrong
-coastline until you change them.
+### What the data does not have
+
+**Par on the 7th.** OpenStreetMap tags par on eight of the nine holes and
+leaves the 7th blank. It is a par 5 on the published card, which agrees with
+OSM on all eight holes it does tag, and with the stroke indexes, where 6 — the
+7th's — is the one missing. That is the single number in the file that was not
+derived from the survey.
+
+**Local knowledge.** Every hole can carry a `note` — where the trouble is,
+what the wind does, which side to miss on. None of them has one yet. This is
+the part no commercial app has for this course and the part only someone who
+plays it can write, so it is worth more than any yardage on the screen.
+
+**A walk-round.** The geometry is survey data, not a club measurement. Before
+anyone plays off it, check a few holes against the card and pace a green:
+that is the difference between this being the course and it being close to the
+course.
+
+### The example-course machinery is still there
+
+`randomCoursePosition()` in `app.js`, the watermark, the banner and the
+example ball are all scoped to `"mapped": false` and none of them now runs.
+They are kept, not deleted: anyone forking this for another school starts
+exactly where this did, with no course and a Yardage tab that has to
+demonstrate itself. Set `mapped` back to `false` and they all come back.
+
 
 ## Why the map draws the hole's route
 
@@ -636,9 +653,9 @@ for the 18th.
 Without it the map has only four points — tee, front, centre, back — and the
 single-hole view rotates so the tee shot points up and scales to fit. The
 arithmetic is different for every hole, but the picture is not: the tee lands
-at the bottom of the frame and the green at the top, every time. Eighteen holes
-render as the same diagram at eighteen different scale-bar readings, and it
-looks like the map is not redrawing when in fact it is.
+at the bottom of the frame and the green at the top, every time. Nine holes
+render as the same diagram at nine different scale-bar readings, and it looks
+like the map is not redrawing when in fact it is.
 
 The `path` is what makes a hole look like itself. The 1st bends right, the 8th
 kinks over the cliff inlet, the 18th sweeps left along the sea, the par 3s run
@@ -650,8 +667,8 @@ straight. Three things follow from it:
   straight line to the green. Lining up on the green turns a dogleg sideways in
   the frame and hides the bend that makes it that hole.
 - **A soft corridor band** is drawn under the dashed line of play, so the shape
-  reads at a glance. Single-hole view only: at whole-course scale eighteen
-  bands overlap into a smear. It is only drawn where there is a real `path`,
+  reads at a glance. Single-hole view only: at whole-course scale nine bands
+  overlap into a smear. It is only drawn where there is a real `path`,
   because a band straight from tee to green would be claiming corridor the data
   does not have.
 
@@ -666,11 +683,11 @@ works exactly as before.
 
 ## Bunkers
 
-124 of them, from the same OpenStreetMap query as the rest, stored per hole in
+24 of them, from the same OpenStreetMap query as the rest, stored per hole in
 `data/course.json` as `bunkers`: a list of closed outlines.
 
-**Single-hole view only.** At whole-course scale a hundred and twenty-four
-bunkers is a sand-coloured texture over the routing, not information. They draw
+**Single-hole view only.** At whole-course scale two dozen bunkers is a
+sand-coloured texture over the routing, not information. They draw
 on top of the fairway corridor they sit in and under the dashed line of play,
 so the route still reads across them.
 
@@ -678,15 +695,15 @@ so the route still reads across them.
 clamped to 5–12 — a pot bunker gets five points, a waste area twelve. A fixed
 budget was the first attempt and it was wrong in both directions: big bunkers
 came out as spikes, small ones carried detail invisible at a yard per SVG unit.
-Round joins on the stroke soften what the budget still leaves behind. 942
-points in all, which is about 7KB of the file.
+Round joins on the stroke soften what the budget still leaves behind. 145
+points in all, which is about 2KB of the file.
 
 **Sand has its own colours**, `--map-sand` and `--map-sand-edge` in `map.css`,
 warm and pale in light mode and dropped to a muted olive in the dark — at the
 light value a hole with ten bunkers glows.
 
-25 of the 149 bunkers in the area were dropped: they belong to The Hay or the
-practice ground, and sit more than 70 yards from any hole's centre-line. That
+3 of the 27 bunkers in the area were dropped: they sit more than 70 yards from
+any hole's centre-line, which on this course means the practice ground. That
 70-yard cap is also what keeps a neighbouring hole's sand off your map.
 
 They are drawn, not measured. There are no carry or layup distances to them —
@@ -928,25 +945,31 @@ than being recomputed, so a drag starts from the angle actually on screen
 whoever worked it out — the mode, or the last drag.
 
 Redrawing the whole map each frame costs 0.09 ms on a single hole and 0.57 ms
-across all eighteen, against a 16.7 ms frame budget, so there is no throttling
-and none is needed.
+across all eighteen of the course it was measured on, against a 16.7 ms frame
+budget, so there is no throttling and none is needed. The nine here are
+cheaper still.
 
-## "Locate me" on the example course
+## "Locate me" on an unmapped course
+
+**Unreachable now that the course is real.** Everything below is scoped to
+`"mapped": false`, and `data/course.json` says `true`. It is written up
+because it is the behaviour anyone forking this for another school meets
+first, and because the reasoning is why the button is trustworthy now.
 
 Tapping it drops a believable ball somewhere on the course — a random hole, a
 random point along it, up to 25 yards either side of the line of play, and a
 4–9 metre accuracy so the ring shows what a real fix looks like. Tap again for
 another.
 
-This exists because of how the published demo read. The example course is
-Pebble Beach and nobody opening the site is standing on it, so a real fix
+This existed because of how the published demo read. The example course was
+Pebble Beach and nobody opening the site was standing on it, so a real fix
 correctly answered *"that is not on this course"* and left three dashes. That
 is the honest answer and it looked like a broken app.
 
-**It is scoped hard to `"mapped": false`.** The moment `data/course.json` says
-the course is really mapped, the button is real GPS again with real errors —
-verified: on a mapped course the simulation never runs, a permission denial
-still reports a denial, and a fix off the course still dashes out. Nothing is
+**It is scoped hard to `"mapped": false`.** That moment has come: the button
+is real GPS again, with real errors — verified, on this course, that the
+simulation never runs, a permission denial still reports a denial, and a fix
+off the course still dashes out. Nothing is
 invented about a course someone is actually playing, because by then the
 number on screen is one a player clubs off.
 
@@ -977,7 +1000,7 @@ in every way except being one, and says so on the map and under the yardages.
 
 Reported as "when I click Locate me the red point disappears" — which was
 true, and was the *old* code doing exactly what it should: a real GPS fix
-somewhere that is not Pebble Beach is off the mapped course, so the map
+somewhere that is not the mapped course is off it, so the map
 refuses to draw the marker and says so. The simulated position shipped in the
 previous version fixed that. The real problem was that the fix had not reached
 the browser.
@@ -1073,7 +1096,7 @@ Navy is darker than the green it replaced, so this got better, not worse:
 | secondary text | 5.93 / 6.56 | **6.25** | **6.39** |
 | loss pills | 5.44 / 5.28 | **5.44** | **5.28** |
 
-Everything still passes AA in both themes, and all six tabs, all 18 holes,
+Everything still passes AA in both themes, and all six tabs, every hole,
 Locate me, hole-picking and the scorecard were re-checked after the restyle.
 
 ## The palette
