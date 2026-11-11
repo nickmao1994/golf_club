@@ -339,9 +339,18 @@ of explanation.
   screen**, the way a yardage book draws it, with a small needle showing where
   north went; the whole-course view stays north-up with the hole you are on
   ringed in red.
-- **The hole follows you.** `autoSelectHole()` already picks the nearest hole
-  from your fix, so arriving at a tee is usually enough. Stepping holes with
-  the arrows redraws the map too.
+- **The hole follows you.** `autoSelectHole()` picks the hole whose line of
+  play (tee, along the centre-line, to the green centre) is nearest your fix,
+  so arriving at a tee is usually enough. It measures to the whole line, not
+  only to the tee and the green, because halfway down a fairway the next
+  hole's tee can be nearer than either end of the hole you are on. Two rules
+  sit on top of "nearest": if you are within 30 yards of the line of the hole
+  already on screen, that hole stays, and if you are within 15 yards of a
+  tee, that tee's hole is chosen. Stepping holes with the arrows redraws the
+  map too.
+- **Every tap is a new fix.** "Locate me" asks the browser for a new position
+  each time (`maximumAge: 0`), so tapping again after walking to the ball, or
+  after a weak fix, does not return the previous position.
 - **Off the mapped course**, the map leaves your dot out rather than squashing
   the course to a dot, and says so under the map. That is what an away match
   or a desktop browser's network-guessed "fix" looks like.

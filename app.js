@@ -959,24 +959,80 @@ function initMapPick() {
   });
 }
 
-/** The hole whose green or tee is nearest, and how far that is. */
+/** Yards from p to the straight segment a-b. The points are projected onto
+    a flat plane centred on p, which is accurate to well under a yard over the
+    few hundred yards of one hole. */
+function yardsToSegment(p, a, b) {
+  const k = Math.cos((p.lat * Math.PI) / 180);
+  const toXY = q => ({
+    x: (q.lon - p.lon) * k * 111320 * M_TO_YD,
+    y: (q.lat - p.lat) * 111320 * M_TO_YD
+  });
+  const A = toXY(a), B = toXY(b);
+  const dx = B.x - A.x, dy = B.y - A.y;
+  const len2 = dx * dx + dy * dy;
+  // t is where the closest point falls along a-b, clamped to the segment.
+  const t = len2 ? Math.max(0, Math.min(1, -(A.x * dx + A.y * dy) / len2)) : 0;
+  return Math.hypot(A.x + t * dx, A.y + t * dy);
+}
+
+/** The hole whose line of play (tee, along the path, to the green centre) is
+    nearest, and how far that is.
+
+    Measuring to the line rather than to the tee and the green alone matters
+    in the middle of a fairway. Halfway down the 3rd at Blair the 6th tee is
+    nearer than either end of the 3rd, so the tee-and-green measure picked the
+    6th and showed yardages to the wrong green. */
 function nearestHole(pos) {
   const holes = (state.course && state.course.holes) || [];
   let best = null;
 
   holes.forEach((h, i) => {
-    [h.center, h.tee].filter(Boolean).forEach(pt => {
-      const d = distanceYards(pos, pt);
-      if (!best || d < best.d) best = { d: d, i: i };
-    });
+    const d = holeLineYards(pos, h);
+    if (d < Infinity && (!best || d < best.d)) best = { d: d, i: i };
   });
   return best;
 }
 
-/** Pick the nearest hole — saves tapping through 18. */
+/** Yards from pos to one hole's line of play, or Infinity if the hole has no
+    coordinates. */
+function holeLineYards(pos, h) {
+  if (!h) return Infinity;
+  const route = (h.path && h.path.length ? h.path : [h.tee])
+    .concat([h.center])
+    .filter(Boolean);
+  let d = Infinity;
+  if (route.length === 1) d = distanceYards(pos, route[0]);
+  for (let j = 1; j < route.length; j++) {
+    d = Math.min(d, yardsToSegment(pos, route[j - 1], route[j]));
+  }
+  return d;
+}
+
+/* A player within KEEP_HOLE_YD of the line of the hole already on screen
+   keeps that hole, even when another hole's line is nearer. At Blair the 6th
+   tee is 28 yards from the 3rd's line, so a ball 25 yards right of the 3rd
+   fairway is nearer the 6th; a player who has the 3rd on screen is playing
+   the 3rd. The one exception is standing on another hole's tee
+   (within ON_TEE_YD of it): a player on a tee is about to play that hole.
+   When the hole is kept, drawHoleHint still says which hole is nearer. */
+const KEEP_HOLE_YD = 30;
+const ON_TEE_YD = 15;
+
+/** Pick the hole the player is on — saves tapping through the holes. */
 function autoSelectHole(pos) {
+  const holes = (state.course && state.course.holes) || [];
   const best = nearestHole(pos);
-  if (best && best.d < 600) state.holeIndex = best.i;
+  if (!best || best.d >= 600) return;
+
+  let onTee = -1;
+  holes.forEach((h, i) => {
+    if (h.tee && distanceYards(pos, h.tee) <= ON_TEE_YD) onTee = i;
+  });
+  if (onTee >= 0) { state.holeIndex = onTee; return; }
+
+  if (holeLineYards(pos, holes[state.holeIndex]) <= KEEP_HOLE_YD) return;
+  state.holeIndex = best.i;
 }
 
 /** Explain a big number instead of hiding it.
@@ -1141,7 +1197,11 @@ function locate() {
         ? 'Location permission denied. Enable it in your browser settings.'
         : 'Could not get a location fix. Try again in the open.';
     },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    // maximumAge 0: each tap asks for a new fix. With 10 s the browser could
+    // hand back the previous fix, so a player who walked to the ball and
+    // tapped again, or who was told "Weak fix ... try again", got the same
+    // position and the same numbers a second time.
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
 }
 
