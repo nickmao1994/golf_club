@@ -4,7 +4,7 @@
 // below changes. install() re-fetches the whole list as a set, which is what
 // keeps index.html, app.css and app.js on the same version; without a bump
 // they refresh independently and a visitor can get new JS against old HTML.
-const CACHE = 'golfclub-v35';
+const CACHE = 'golfclub-v36';
 const SHELL = [
   './', './index.html', './app.css', './app.js', './manifest.webmanifest',
   './map.css', './map.js', './card.js',
