@@ -1,15 +1,16 @@
 {
   "_readme": "Club identity and static text. Edit this file (or point fetchers at a published Google Sheet) — no code changes needed.",
   "clubName": "School Golf Club",
-  "_demo": "true turns on the banner saying everything on screen is invented. Set it to false in the same edit that replaces the demo content in schedule.json, results.json and status.json — never before.",
-  "demo": true,
-  "tagline": "Replace this with one line about the club.",
-  "_features": "Which parts of the app are live. Phase 1 is the static content only: club intro, photos, schedule, contacts. Turn each of these on when that phase's content is real — not when its code is written. A status panel nobody updates and an example yardage both teach players to distrust the app. 'yardage' and 'results' also take \"preview\": the tab appears and describes the feature, with no data behind it.",
+  "_demo": "true puts a banner above every tab saying the schedule, results and status on screen are invented. It is false because none of them are: those files are empty, waiting for real content, and the app says so in plain words where each one would go. Only set it true alongside stand-in content, and clear it in the same edit that removes it.",
+  "demo": false,
+  "_tagline": "One line under the club name, shown on every tab. Who the club is for, or when it plays. The header leaves the line out while this is empty.",
+  "tagline": "",
+  "_features": "Which parts of the app are live. Turn each of these on when that phase's content is real — not when its code is written. A status panel nobody updates and an example yardage both teach players to distrust the app. 'status' is off until a named person has committed to updating data/status.json daily. 'yardage' and 'results' also take \"preview\": the tab appears and describes the feature, with no data behind it, which is what 'results' is on while there are no matches to show.",
   "features": {
-    "status": true,
+    "status": false,
     "weather": true,
     "yardage": true,
-    "results": true,
+    "results": "preview",
     "scorecard": true
   },
   "_scorecard": "The scorecard needs no content, so it can be on from day one. 'holes' sets the card length when the course has not been mapped; once data/course.json has 'mapped': true the card follows the real hole count and shows par.",
@@ -29,15 +30,13 @@
     "forecastUrl": "https://forecast.weather.gov/MapClick.php?lat=40.9883&lon=-74.9688",
     "_forecastUrl": "Where the weather card's 'Full forecast and radar' link points. This is the National Weather Service page for the course, which is the right one for a US course. Leave it empty to build a Windy link from the coordinates above instead, which works anywhere."
   },
-  "about": [
-    "Replace these paragraphs with the club introduction. Who the club is for, what a typical week looks like, what a new member should expect at their first practice.",
-    "Mention whether beginners are welcome, whether clubs are provided, and what it costs."
-  ],
+  "_about": "The club introduction, one string per paragraph. Who the club is for, what a typical week looks like, what a new member should expect at their first practice, whether beginners are welcome, whether clubs are provided, what it costs. Until someone writes it the About tab says the introduction has not been written yet, which is honest; placeholder prose pretending to be it is not.",
+  "about": [],
+  "_contacts": "Role, name and an address each person is happy to have published. A name left empty reads 'TBD' rather than blank. Publishing a student's name here is the club's privacy decision, not this app's: a role with no name is a working answer.",
   "contacts": [
     { "role": "Coach", "name": "TBD", "email": "" },
     { "role": "Club Captain", "name": "TBD", "email": "" }
   ],
-  "photos": [
-    { "src": "", "caption": "Add photos here once Blair has shot some on a clear day. The card hides itself while every 'src' is empty." }
-  ]
+  "_photos": "Add image files to the repo and list them here as { \"src\", \"caption\" }. The Photos card hides itself while this is empty, so it never shows an empty grid.",
+  "photos": []
 }

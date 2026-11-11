@@ -1,13 +1,12 @@
 {
-  "_readme": "Daily course status. This is the one file that needs a human. Update 'updatedAt' every time — the app greys the panel out after staleHours.",
-  "_demo": true,
-  "_placeholder": "Made-up conditions, to show the panel working. Note that the demo goes stale on its own: once 'updatedAt' is more than 'staleHours' old the card greys out and says so, which is the guard working rather than a bug.",
+  "_readme": "Daily course status: the one file in here that needs a human every day. Change 'updatedAt' in the same edit as the conditions — the app greys the panel out once it is older than 'staleHours', and a panel with no date at all says so and asks not to be relied on.",
+  "_live": "club.json -> features.status stays false until a named person has committed to updating this daily. Fill the fields in, set that flag true, and the card appears on the Today tab. An unset field renders as a dash rather than as a guess: 'open' left null reads '—', not 'Closed'.",
   "staleHours": 18,
-  "updatedAt": "2026-10-30T14:00:00Z",
-  "updatedBy": "Coach",
-  "open": true,
-  "cartsAllowed": false,
-  "greenHeightMm": 3.5,
-  "roughHeightMm": 50,
-  "notes": "Carts path-only after Wednesday's rain. Temporary green on 6. Frost delay possible before 9am."
+  "updatedAt": "",
+  "updatedBy": "",
+  "open": null,
+  "cartsAllowed": null,
+  "greenHeightMm": null,
+  "roughHeightMm": null,
+  "notes": ""
 }

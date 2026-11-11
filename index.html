@@ -113,13 +113,15 @@
       </p>
     </div>
 
+    <!-- Only while data/course.json is an example layout. It warns the
+         player and nothing more: how to map a course is in the README, not
+         on a screen someone is reading on a tee. -->
     <div class="banner hidden" id="unmappedBanner">
-      <strong>Course not mapped yet.</strong> The layout below is
+      <strong>Not this club's course.</strong> The layout below is
       <b id="exampleCourseName">an example course</b> — a real one, standing in
-      so the map and the distances can be seen working on real holes. The marker
-      is an example ball, not where you are. Walk your own course with
-      <a href="tools/map-course.html">the mapping tool</a>, then paste the result
-      into <code>data/course.json</code>.
+      so the map and the distances can be seen working on real holes. The
+      marker is an example ball, not where you are, and no distance here is a
+      distance on your course.
       <span class="credit" id="courseCredit"></span>
     </div>
 
@@ -152,6 +154,10 @@
 
       <!-- Local knowledge for this hole, from data/course.json. -->
       <p class="hole-note hidden" id="holeNote"></p>
+
+      <!-- Shown while data/course.json is mapped but not yet "verified":
+           the geometry is a survey, and nobody has walked it with the card. -->
+      <p class="check-note hidden" id="courseCheck"></p>
       <p class="note rules-note">
         Distance only — no slope or club advice, so this stays conforming under
         Rule 4.3a for tournament play.

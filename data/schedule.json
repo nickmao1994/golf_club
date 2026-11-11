@@ -1,28 +1,5 @@
 {
-  "_readme": "Practices and matches. Times are local to the course. Keep past items — the app filters them out.",
-  "_demo": true,
-  "_placeholder": "Every event below is made up, to show the app working before the real schedule lands. Delete the whole 'events' array and put the real fixtures in; do not re-date these. While '_demo' is true and club.json has 'demo': true, the app shows a banner saying so.",
-  "_lineup": "A match can carry a 'lineup': playing order and tee times, shown on the event. Publishing it puts student names on a public page, so it is governed by the same Phase 0 privacy decision as the results cards — leave 'lineup' out entirely and the event renders without it. Initials or first names are a middle option.",
-  "events": [
-    { "date": "2026-11-02", "time": "15:30", "type": "practice", "title": "Team practice", "location": "Home Course — short game, then the back nine", "bring": "Clubs, water, hat" },
-    { "date": "2026-11-04", "time": "14:00", "type": "match", "title": "vs. Riverside High", "location": "Away — Cedar Ridge Golf Club", "bring": "Team shirt. Bus leaves school at 12:30.",
-      "lineup": [
-        { "time": "14:00", "player": "A. Chen" },
-        { "time": "14:10", "player": "J. Okafor" },
-        { "time": "14:20", "player": "M. Dubois" },
-        { "time": "14:30", "player": "S. Patel" },
-        { "time": "14:40", "player": "L. Nguyen" }
-      ] },
-    { "date": "2026-11-07", "time": "09:00", "type": "practice", "title": "Saturday range session", "location": "Home Course — range and putting green", "bring": "Clubs. Range balls provided." },
-    { "date": "2026-11-11", "time": "14:30", "type": "match", "title": "vs. Northgate Academy", "location": "Home Course", "bring": "Team shirt. Tee times from 14:30.",
-      "lineup": [
-        { "time": "14:30", "player": "J. Okafor" },
-        { "time": "14:40", "player": "A. Chen" },
-        { "time": "14:50", "player": "S. Patel" },
-        { "time": "15:00", "player": "L. Nguyen" },
-        { "time": "15:10", "player": "M. Dubois" }
-      ] },
-    { "date": "2026-11-14", "time": "08:30", "type": "match", "title": "District qualifier", "location": "Away — Lakeside Country Club", "bring": "Team shirt. Bus leaves school at 06:45. Bring lunch." },
-    { "date": "2026-11-18", "time": "15:30", "type": "practice", "title": "Team practice", "location": "Home Course — back nine", "bring": "Clubs, water, hat" }
-  ]
+  "_readme": "Practices and matches. Times are local to the course. Keep past items — the app filters them out. While 'events' is empty the Schedule tab and the 'Next up' card both read 'Nothing scheduled yet.', which is true and is better than a fixture nobody is playing.",
+  "_lineup": "A match can carry a 'lineup': playing order and tee times, shown on the event. Publishing it puts student names on a public page, so it is governed by the same privacy decision as the results cards — leave 'lineup' out entirely and the event renders without it. Initials or first names are a middle option.",
+  "events": []
 }

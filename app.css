@@ -162,6 +162,14 @@ dl.kv dd { margin: 0; font-variant-numeric: tabular-nums; }
 }
 .rules-note { font-size: 0.8125rem; border-top: 1px solid var(--line); padding-top: 10px; }
 
+/* A caveat on the numbers above it, not a footnote under them — so it takes
+   the warning colours rather than the grey of .note. */
+.check-note {
+  margin: 12px 0 0; padding: 10px 12px;
+  background: var(--warn-bg); border: 1px solid var(--warn-line);
+  color: var(--warn-text); font-size: 0.875rem; line-height: 1.45;
+}
+
 /* ── Weather ── */
 .wx-now { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
 .wx-temp { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }

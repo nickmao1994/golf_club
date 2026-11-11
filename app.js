@@ -94,8 +94,13 @@ async function renderClub() {
   $('tagline').textContent = club.tagline || '';
   document.title = club.clubName;
 
-  $('aboutText').innerHTML = (club.about || [])
-    .map(p => '<p>' + escapeHTML(p) + '</p>').join('');
+  // An unwritten introduction says so, to the reader. The alternative was
+  // placeholder prose sitting in the club's voice, which reads as the club's
+  // own words right up until you notice it is instructions to the editor.
+  const about = (club.about || []).filter(p => p && String(p).trim());
+  $('aboutText').innerHTML = about.length
+    ? about.map(p => '<p>' + escapeHTML(p) + '</p>').join('')
+    : '<p class="note">The club introduction has not been written yet.</p>';
 
   $('contactList').innerHTML = (club.contacts || []).map(c => {
     const who = c.email
@@ -161,7 +166,7 @@ function statusFromCsv(text) {
     staleHours:    num(cell.staleHours) === null ? 18 : num(cell.staleHours),
     updatedAt:     cell.updatedAt || '',
     updatedBy:     cell.updatedBy || '',
-    open:          truthy(cell.open),
+    open:          bool(cell.open),
     cartsAllowed:  bool(cell.cartsAllowed),
     greenHeightMm: num(cell.greenHeightMm),
     roughHeightMm: num(cell.roughHeightMm),
@@ -211,9 +216,12 @@ async function renderStatus(club) {
       ? 'Last updated ' + agoText(ageHours) + ' — may be out of date'
       : 'Updated ' + fmtTime(s.updatedAt) + (s.updatedBy ? ' by ' + s.updatedBy : '');
 
+  // Unset is not "Closed". A blank cell in the sheet, or a file nobody has
+  // filled in, means nobody has said — and "Closed" is a confident wrong
+  // answer that keeps a team off a playable course. The dash is the true one.
   const open = $('statusOpen');
-  open.textContent = s.open ? 'Open' : 'Closed';
-  open.className = 'status-big ' + (s.open ? 'open' : 'closed');
+  open.textContent = s.open == null ? '—' : s.open ? 'Open' : 'Closed';
+  open.className = 'status-big' + (s.open == null ? '' : s.open ? ' open' : ' closed');
 
   const mm = v => (v == null ? '—' : v + ' mm');
   $('greenHeight').textContent = mm(s.greenHeightMm);
@@ -263,9 +271,12 @@ async function renderWeather(club) {
   const body = $('weatherBody');
   const course = club.homeCourse || {};
 
+  // No coordinates, no forecast. Said as a fact about the app rather than as
+  // an instruction to edit a file: the person reading this is on a phone at a
+  // tee, and cannot act on homeCourse either way. The fix is in the README.
   if (course.latitude == null) {
     body.classList.remove('loading');
-    body.textContent = 'Set the course coordinates in data/club.json.';
+    body.textContent = 'No course location set, so there is no forecast.';
     return;
   }
 
@@ -659,7 +670,31 @@ async function initYardage() {
     credit.classList.remove('hidden');
   }
 
+  paintCourseCheck();
   drawHole();
+}
+
+/* A course mapped from survey data is the right course, drawn from the wrong
+   kind of certainty: the greens and centre-lines are somebody else's survey,
+   and nobody from the club has stood on a tee with the card and checked them.
+   That is worth saying on the screen the numbers appear on — and worth saying
+   only until it is done: set "verified": true in data/course.json after the
+   walk-round and the line goes away. An example course says its own, louder
+   thing in the banner above, so this stays out of its way. */
+function paintCourseCheck() {
+  const el = $('courseCheck');
+  if (!el) return;
+
+  const c = state.course;
+  const unchecked = !!c && c.mapped === true && c.verified !== true;
+
+  el.textContent = unchecked
+    ? 'Not checked on the ground yet. These distances are measured from '
+      + 'survey data rather than from a walk of the course, so use them to '
+      + 'see where you are, and expect a few yards either way until someone '
+      + 'has paced a green against the card.'
+    : '';
+  el.classList.toggle('hidden', !unchecked);
 }
 
 function drawHole() {

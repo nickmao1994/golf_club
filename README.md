@@ -67,8 +67,12 @@ a green with the wrong club.
 So visibility is content-gated, in `data/club.json` → `features`:
 
 ```json
-"features": { "status": true, "weather": true, "yardage": true, "results": true, "scorecard": true }
+"features": { "status": false, "weather": true, "yardage": true, "results": "preview", "scorecard": true }
 ```
+
+That is the live setting, not an example: weather and the yardages have real
+content behind them, the scorecard needs none, the status panel is waiting for
+someone to own it daily, and results is announced but empty.
 
 `false` hides that part completely — the gated cards disappear from the Today
 view, and a gated tab loses its button as well as its view, so there is no
@@ -98,70 +102,72 @@ the preview: put the link in `externalUrl` and set `results` to `true`.
 |---|---|---|
 | — | Club intro, photos, schedule and contacts are real in `data/club.json` and `data/schedule.json` | 1 |
 | `weather` | `homeCourse` holds the real course coordinates — **done**: Blair Academy, 40.9883, -74.9688 | 2 |
-| `status` | A named person has committed to updating `data/status.json` daily | 2 |
-| `yardage` | `"preview"` to announce it now; `true` once `data/course.json` has `"mapped": true` — **mapped** from survey data; still wants a walk-round to confirm it | 3–4 |
-| `results` | `"preview"` to announce it now; `true` once the scoring format is agreed and the first match is in `data/results.json` | 5 |
+| `status` | A named person has committed to updating `data/status.json` daily — **off**, nobody has yet | 2 |
+| `yardage` | `"preview"` to announce it now; `true` once `data/course.json` has `"mapped": true` — **on**, mapped from survey data; the walk-round it still wants is tracked by `verified`, not by this flag | 3–4 |
+| `results` | `"preview"` to announce it now; `true` once the scoring format is agreed and the first match is in `data/results.json` — **"preview"** | 5 |
 
 With every flag off, the app is exactly the Phase 1 deliverable: club
 introduction, photos, schedule and contacts, and nothing that can be wrong.
 
-### Demo mode
+### Nothing on screen is invented
 
-The app currently ships with **every feature on and invented content behind
-them**, so the whole thing can be shown working before any real content
-exists. That is the exact situation the gates were built to prevent, so it is
-fenced:
+The app used to ship with every feature on and made-up content behind them —
+five matches, a season of fixtures with student names in the lineups, and a
+set of course conditions — under a banner saying so. That was useful while the
+thing was being built and is the wrong thing to publish: the banner is read
+once and the scores are read every time, and the names in those cards were
+never a decision that student names get published.
 
-- `data/club.json` → `"demo": true` puts a banner above every tab saying the
-  schedule, results and status are invented. It no longer says that of the
-  yardages: the course is real, and the banner names the Yardage tab as the
-  one place on screen that is.
-- Each demo file carries `"_demo": true` and a `_placeholder` note saying to
-  delete its contents rather than edit them.
+So the stand-in content is gone rather than labelled, and each empty file says
+what it is waiting for:
 
-**Turning it off is one edit per file, in this order:** replace the content in
-`schedule.json`, `results.json` and `status.json`, then set `demo` to `false`.
-Never clear the flag first — a banner that is briefly wrong is recoverable; a
-site that silently presents invented match scores as the season's record is
-not.
+| File | On screen now | Filled in by |
+|---|---|---|
+| `data/schedule.json` | "Nothing scheduled yet.", on the Schedule tab and in Next up | The real fixtures |
+| `data/results.json` | The Results tab's preview card: results go up after each match | The first match, once the scoring format is agreed |
+| `data/status.json` | Nothing — `features.status` is `false` | A named person who will update it daily |
+| `data/club.json` → `about` | "The club introduction has not been written yet." | Whoever writes it |
 
-The player names in `results.json` are invented, and are **not** a decision
-that student names will be published. That question is still open, and the
-Phase 0 privacy answer governs it.
+`"demo": true` in `data/club.json` still exists and still puts a banner above
+every tab. It is for the next person who wants to show the app working before
+its content lands: put the stand-in content in, set the flag in the same edit,
+and clear it in the edit that takes the content out again. Nothing in the repo
+is in that state today.
 
-Two things behave "wrong" in the demo on purpose, because they are the guards
-working:
-
-- The course status greys out and says "may be out of date" once its
-  `updatedAt` passes `staleHours`, which the demo data will do a day after it
-  was written.
-- The Yardage tab does **not** show its "Course not mapped yet" banner, and
-  the yardages are not demo data: `data/course.json` is the club's own course,
-  mapped, and the banner above says so by naming the four things that are
-  invented.
+An empty file is not a broken one. Each of the lines above is a true statement
+about the club, and a true "not yet" is worth more than a convincing "here is
+your season". The guards that make that safe are the same ones the demo used
+to exercise: the status panel greys out and says "may be out of date" once
+`updatedAt` passes `staleHours`, an undated panel says "do not rely on this",
+and a field nobody has filled in reads "—" rather than guessing — which is why
+an unset `open` is a dash and not "Closed".
 
 ### What Phase 1 still needs
 
 All of it is content, none of it is code. In `data/club.json`:
 
-- `clubName` and `tagline` — one line about the club.
+- `clubName` and `tagline` — one line about the club. `tagline` is empty, and
+  the header leaves the line out entirely rather than showing a placeholder.
 - `about` — the introduction paragraphs. Who the club is for, what a typical
   week looks like, whether beginners are welcome, whether clubs are provided,
-  what it costs.
+  what it costs. It is empty, so the About tab says the introduction has not been
+  written yet — which is the honest version of the same thing.
 - `contacts` — the coach and captain, with the names and addresses they are
-  happy to publish.
+  happy to publish. Both read "TBD" today.
 - `photos` — add files to the repo and list them with captions. The Photos card
   hides itself while no photo has a `src`, so it never shows an empty grid.
 - `homeCourse` — done. Blair Academy Golf Course, and the coordinates
   the weather card forecasts for.
 
-And in `data/schedule.json`, the real practices and matches. The schedule
-filters out past dates, so the placeholder events will quietly vanish rather
-than mislead — which also means the Schedule tab reads "Nothing scheduled yet"
-until real ones are added.
+And in `data/schedule.json`, the real practices and matches. It is empty, so
+the Schedule tab and Next up both read "Nothing scheduled yet" until they are
+added; past dates filter themselves out afterwards, so nothing has to be
+cleaned up later.
 
 The privacy decision from Phase 0 lands here too: whether student names appear
-at all. It binds `contacts` and the player names in `data/results.json`.
+at all. It binds `contacts`, the `lineup` on a match, and the cards in
+`data/results.json` — all three are empty of names today, which leaves the
+decision open rather than making it by default.
 
 ## Caching: the shell is fast, the content is fresh
 
@@ -298,7 +304,7 @@ without standing on a tee. Tap **Clear demo course** to remove it.
 
 The demo is fenced off from real data: while it is loaded, the export sets
 `"mapped": false` and adds `"_demo": true`, so demo coordinates can never be
-pasted in and mistaken for a real survey — the app's "not mapped yet" banner
+pasted in and mistaken for a real survey — the app's example-course banner
 keys off exactly that flag.
 
 ### The map while you walk
@@ -319,6 +325,8 @@ Accuracy notes:
 Until `data/course.json` has `"mapped": true`, the Yardage tab shows a visible
 banner saying the numbers are examples. Do not remove that banner before the
 real walk — showing invented yardages is how players stop trusting the app.
+A mapped course that nobody has checked on the ground carries the quieter
+`verified` line instead; see [The course](#the-course).
 
 ### Away matches
 
@@ -486,8 +494,9 @@ here it is a data-only feature — nothing to build, nothing to maintain.
 **It publishes student names on a public page**, so it is governed by the same
 Phase 0 privacy decision as the results cards. Leave `lineup` out and the
 event renders exactly as before; initials or first names are a middle option.
-A match without a lineup is normal, not a gap — the demo's district qualifier
-deliberately has none.
+A match without a lineup is normal, not a gap. No match in the repo carries
+one today, because no match in the repo carries anything — the file is empty
+until the real fixtures land.
 
 ## The scorecard
 
@@ -572,9 +581,17 @@ before anyone installs this to a home screen.
 `data/course.json` is **Blair Academy Golf Course**, 2 Park Street,
 Blairstown, New Jersey — the club's own nine, par 35, with `"mapped": true`.
 That flag is what turns the Yardage tab from a demonstration into a tool: the
-"not mapped yet" banner is gone, the map is no longer watermarked, **Locate
-me** is real GPS rather than a simulated ball, and par appears on the
+"not this club's course" banner is gone, the map is no longer watermarked,
+**Locate me** is real GPS rather than a simulated ball, and par appears on the
 scorecard.
+
+`"verified": false` is the second flag, and it is the one still outstanding.
+`mapped` says there are real coordinates here; `verified` says a person has
+stood on the course and agreed with them. While it is false the Yardage tab
+carries a line under the numbers saying they come from survey data rather than
+from a walk of the course, and to expect a few yards either way. Set it true
+in the edit that records the walk-round and the line goes away — it is a
+promise about the numbers, so nobody should set it to tidy the screen up.
 
 | | |
 |---|---|
@@ -582,6 +599,7 @@ scorecard.
 | Par | 35 — 4, 3, 4, 4, 5, 3, 5, 3, 4 |
 | Measured | 2,634 yards, tee to green centre |
 | Bunkers | 24, mapped as outlines |
+| Checked on the ground | Not yet — `"verified": false` |
 | Weather | 40.9883, -74.9688 — the centre of the nine |
 
 ### Why 2,634 and not 2,825
@@ -639,10 +657,11 @@ what the wind does, which side to miss on. None of them has one yet. This is
 the part no commercial app has for this course and the part only someone who
 plays it can write, so it is worth more than any yardage on the screen.
 
-**A walk-round.** The geometry is survey data, not a club measurement. Before
-anyone plays off it, check a few holes against the card and pace a green:
-that is the difference between this being the course and it being close to the
-course.
+**A walk-round.** The geometry is survey data, not a club measurement. Check a
+few holes against the card and pace a green: that is the difference between
+this being the course and it being close to the course. This is the one gap
+the app admits to on screen — `"verified": false` puts the caveat under the
+yardages — and setting the flag true is how you record that it is closed.
 
 ### The example-course machinery is still there
 
